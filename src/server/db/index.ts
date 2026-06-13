@@ -1,6 +1,7 @@
-import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import { env } from "@/lib/env";
+import * as schema from "./schema";
 
 // Reuse one pool across Next.js dev-server module reloads
 const globalForDb = globalThis as unknown as { pgPool?: Pool };
@@ -12,5 +13,5 @@ if (process.env.NODE_ENV !== "production") {
   globalForDb.pgPool = pool;
 }
 
-// Schema is registered here in Phase 2
-export const db: NodePgDatabase = drizzle(pool);
+export const db = drizzle(pool, { schema });
+export { schema };
