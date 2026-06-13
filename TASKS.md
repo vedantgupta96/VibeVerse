@@ -21,10 +21,10 @@ Docs to read before any phase: `PRODUCT_SPEC.md` (what), `ARCHITECTURE.md` (how)
 
 ## Phase 2 — Database Schema
 
-- [ ] `server/db/schema.ts` — all tables from `DATABASE.md` (incl. `vector(1024)` column)
-- [ ] Migration 0001: `CREATE EXTENSION IF NOT EXISTS vector;` + tables + indexes (incl. HNSW)
-- [ ] `server/db/index.ts` drizzle singleton
-- [ ] Optional: seed script skeleton
+- [x] `server/db/schema.ts` — all tables from `DATABASE.md` (incl. `vector(1024)` column); Better Auth core tables hand-defined here (adapter points at them in Phase 3)
+- [x] Migration `0000` (drizzle-kit's 0-based first migration): `CREATE EXTENSION IF NOT EXISTS vector;` + tables + indexes (incl. HNSW)
+- [x] `server/db/index.ts` drizzle singleton (schema registered)
+- [x] Optional: seed script skeleton (`server/db/seed.ts` — real seeding deferred to Phase 3/4)
 
 **Accept:** `npm run db:migrate` succeeds on a fresh DB; `db:studio` shows all tables.
 

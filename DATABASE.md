@@ -169,7 +169,7 @@ LIMIT 10;
 ## Migration Policy
 
 - `drizzle-kit generate` for every schema change; SQL migrations are checked into `drizzle/`.
-- Migration 0001 enables `vector` and creates everything above; Better Auth tables generated into the same schema file before cutting it.
+- The first migration (`0000`, drizzle-kit's 0-based numbering) enables `vector` (the `CREATE EXTENSION IF NOT EXISTS vector;` line is prepended to the generated SQL) and creates everything above. Better Auth core tables are hand-defined in the same schema file (matching Better Auth's default Drizzle output); the auth instance points its adapter at them in Phase 3 rather than regenerating.
 - No destructive migrations without an explicit note in the PR description.
 
 ## Seed Script (optional, `npm run db:seed`)
