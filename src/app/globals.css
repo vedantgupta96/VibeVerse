@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+@theme {
+  /* Space (backgrounds, low → high elevation) */
+  --color-void: #07060b;
+  --color-space-1: #0d0b14;
+  --color-space-2: #14111f;
+  --color-space-3: #1c1730;
+
+  /* Text */
+  --color-star: #f2efff;
+  --color-stardust: #a99fc4;
+  --color-faint: #5e5678;
+
+  /* Aurora (brand accents) */
+  --color-aurora-violet: #8b5cf6;
+  --color-aurora-magenta: #e14ecf;
+  --color-aurora-cyan: #22d3ee;
+  --color-aurora-amber: #f5a623;
+
+  /* Semantic */
+  --color-success: #34d399;
+  --color-danger: #f87171;
+  --color-border: rgba(169, 159, 196, 0.14);
+
+  /* Mood colors (memories, taste DNA) */
+  --color-mood-joyful: #f5a623;
+  --color-mood-nostalgic: #e14ecf;
+  --color-mood-melancholy: #6366f1;
+  --color-mood-energetic: #ef4444;
+  --color-mood-calm: #22d3ee;
+  --color-mood-romantic: #fb7185;
+  --color-mood-gritty: #a8a29e;
+  --color-mood-dreamy: #8b5cf6;
+
+  /* Typography */
+  --font-display: "Clash Display", var(--font-space-grotesk), sans-serif;
+  --font-sans: var(--font-space-grotesk), ui-sans-serif, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  /* Elevation */
+  --shadow-ambient: 0 8px 32px rgba(0, 0, 0, 0.35);
+
+  /* Motion */
+  --ease-vibe: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--color-void);
+    color: var(--color-star);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background-color: rgba(139, 92, 246, 0.4);
+  }
+
+  :focus-visible {
+    outline: 2px solid rgba(34, 211, 238, 0.6);
+    outline-offset: 2px;
+  }
+}
+
+/* Floating surfaces only (sidebar, player bar, modals, panels) */
+@utility glass {
+  background: rgba(20, 17, 31, 0.55);
+  backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    inset 0 1px 0 rgba(242, 239, 255, 0.06),
+    var(--shadow-ambient);
+}
+
+/* Signature gradient: primary CTAs, active states, logo */
+@utility gradient-aurora {
+  background-image: linear-gradient(
+    135deg,
+    #8b5cf6 0%,
+    #e14ecf 55%,
+    #22d3ee 100%
+  );
+}
+
+@utility text-gradient-aurora {
+  background-image: linear-gradient(
+    135deg,
+    #8b5cf6 0%,
+    #e14ecf 55%,
+    #22d3ee 100%
+  );
+  background-clip: text;
+  color: transparent;
+}
