@@ -1,0 +1,49 @@
+import { z } from "zod";
+
+/**
+ * DATABASE_URL is the only hard requirement in Phase 1. Auth vars become
+ * required in Phase 3 and AI keys in Phases 6–7; their routes guard at
+ * call time so the app shell runs without them.
+ */
+export const envSchema = z.object({
+  DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
+
+  BETTER_AUTH_SECRET: z.string().optional(),
+  BETTER_AUTH_URL: z.string().default("http://localhost:3000"),
+
+  ANTHROPIC_API_KEY: z.string().optional(),
+  ANTHROPIC_FAST_MODEL: z.string().default("claude-haiku-4-5"),
+  ANTHROPIC_DEFAULT_MODEL: z.string().default("claude-sonnet-4-6"),
+  ANTHROPIC_STRONG_MODEL: z.string().default("claude-opus-4-8"),
+
+  VOYAGE_API_KEY: z.string().optional(),
+  VOYAGE_MODEL: z.string().default("voyage-4-lite"),
+
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+});
+
+export type Env = z.infer<typeof envSchema>;
+
+function loadEnv(): Env {
+  const parsed = envSchema.safeParse(process.env);
+  if (!parsed.success) {
+    const fieldErrors = z.flattenError(parsed.error).fieldErrors;
+    const lines = Object.entries(fieldErrors)
+      .map(([key, errors]) => `  ${key}: ${(errors ?? []).join(", ")}`)
+      .join("\n");
+    throw new Error(`Invalid environment configuration:\n${lines}`);
+  }
+  return parsed.data;
+}
+
+let cached: Env | undefined;
+
+// Validated on first access (not import) so tests and build tooling can
+// load modules that reference env without a fully configured process.env.
+export const env: Env = new Proxy({} as Env, {
+  get(_target, prop) {
+    cached ??= loadEnv();
+    return cached[prop as keyof Env];
+  },
+});
