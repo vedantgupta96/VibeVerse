@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import { Starfield } from "@/components/layout/Starfield";
+import { Providers } from "./providers";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -35,7 +36,7 @@ export default function RootLayout({
         className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} min-h-dvh`}
       >
         <Starfield />
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

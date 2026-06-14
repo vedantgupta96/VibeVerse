@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { auth } from "@/server/auth";
+import { HomeSearch } from "@/components/search/HomeSearch";
 
 export const metadata = { title: "Home · VibeVerse" };
 
@@ -25,9 +26,13 @@ export default async function HomePage() {
           Welcome back, {firstName}.
         </h1>
         <p className="mt-3 max-w-md text-stardust">
-          Search lands next — soon you’ll save tracks, write memories, and
-          generate playlists from a single vibe.
+          Start with a search — find a track, hit play to preview, and build the
+          library your galaxy grows from.
         </p>
+
+        <div className="mt-8 max-w-xl">
+          <HomeSearch />
+        </div>
 
         <div className="mt-10 grid gap-4 sm:grid-cols-3">
           {[
