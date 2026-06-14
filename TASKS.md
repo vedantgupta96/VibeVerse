@@ -41,13 +41,13 @@ Docs to read before any phase: `PRODUCT_SPEC.md` (what), `ARCHITECTURE.md` (how)
 
 ## Phase 4 — Track/Artist Search
 
-- [ ] `MusicProvider` interface + Deezer implementation (timeouts, error mapping)
-- [ ] `GET /api/search` (Zod query validation, `saved` flag enrichment)
-- [ ] `lib/api-client.ts` + `useSearch` hook (TanStack Query, 300 ms debounce)
-- [ ] `SearchBar`, `TrackCard`, search results on `/home` and `/search`
-- [ ] `PreviewButton` + `usePlayerStore` (one preview at a time) + `PlayerBar`
+- [x] `MusicProvider` interface + Deezer implementation (5s timeout, `PROVIDER_UNAVAILABLE` mapping, pure normalizers + tests)
+- [x] `GET /api/search` (Zod query validation, `requireUser`, `saved`/`id` enrichment via `services/tracks.ts`)
+- [x] `lib/api-client.ts` + `useSearch` hook (TanStack Query + `Providers`, 300 ms debounce); `useDebouncedValue`
+- [x] `SearchBar`, `TrackCard`, `ArtistCard`, `SearchExperience` (tabs/loading/empty/error); `/search` page; hero search on `/home` + compact `HeaderSearch`
+- [x] `PreviewButton` + `usePlayerStore` (single shared audio, one preview at a time) + `PlayerBar`
 
-**Accept:** typing "daft punk" shows real tracks with art; preview plays/pauses; provider failure shows the error state.
+**Accept:** typing "daft punk" shows real tracks with art; preview plays/pauses; provider failure shows the error state. ✓ verified (live Deezer: 20 tracks/18 artists, preview playback, 401 unauthenticated, 400 on empty query).
 
 ## Phase 5 — Save Tracks (Library)
 
