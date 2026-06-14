@@ -30,14 +30,14 @@ Docs to read before any phase: `PRODUCT_SPEC.md` (what), `ARCHITECTURE.md` (how)
 
 ## Phase 3 — Auth
 
-- [ ] Better Auth instance (`server/auth.ts`), Drizzle adapter, email/password; Google conditional on env
-- [ ] Generate auth tables into schema + migration
-- [ ] `app/api/auth/[...all]/route.ts`; auth client in `lib/`
-- [ ] `/login` + `/signup` pages styled per design system
-- [ ] `middleware.ts` gate for `/(app)`; `requireUser()` helper
-- [ ] `(app)/layout.tsx` AppShell (sidebar, user menu, sign out)
+- [x] Better Auth instance (`server/auth.ts`), Drizzle adapter, email/password; Google conditional on env
+- [x] Auth tables — already created in Phase 2 migration `0000`; the adapter points at them (no regeneration)
+- [x] `app/api/auth/[...all]/route.ts`; auth client in `lib/auth-client.ts`
+- [x] `/login` + `/signup` pages styled per design system (+ shared `(auth)` layout)
+- [x] `middleware.ts` gate for `/(app)`; `requireUser()` helper; `GET /api/me` to exercise it
+- [x] `(app)/layout.tsx` AppShell (Sidebar, UserMenu, sign out) + `/home` dashboard; UI primitives (`button`/`input`/`label`)
 
-**Accept:** sign up → land on `/home`; sign out → `/home` redirects to `/login`; API routes 401 without a session.
+**Accept:** sign up → land on `/home`; sign out → `/home` redirects to `/login`; API routes 401 without a session. ✓ verified end-to-end via curl.
 
 ## Phase 4 — Track/Artist Search
 

@@ -196,6 +196,12 @@ Errors: `AI_UNAVAILABLE`, `AI_REFUSED`, `PROVIDER_UNAVAILABLE` (if resolution fa
 
 `/api/auth/[...all]` — handled entirely by Better Auth (`signUpEmail`, `signInEmail`, `signOut`, `getSession`, OAuth callbacks). Use its client SDK on the frontend; do not hand-roll these routes.
 
+### `GET /api/me`
+
+Current authenticated user. Also the reference pattern for how protected routes call `requireUser()`.
+**200** → `{ "user": { "id": string, "name": string, "email": string, "image": string | null } }`
+**401 UNAUTHORIZED** with the standard envelope when no valid session.
+
 ## Health (Public)
 
 ### `GET /api/health` → **200** `{ "ok": true }` (DB ping included)
