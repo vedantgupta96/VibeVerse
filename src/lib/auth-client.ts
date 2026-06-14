@@ -1,0 +1,6 @@
+import { createAuthClient } from "better-auth/react";
+
+// Browser client — talks to /api/auth on the same origin.
+export const authClient = createAuthClient();
+
+export const { signIn, signUp, signOut, useSession } = authClient;
