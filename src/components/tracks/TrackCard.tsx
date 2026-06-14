@@ -1,8 +1,10 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { Music } from "lucide-react";
 import { PreviewButton } from "@/components/tracks/PreviewButton";
+import { SaveButton } from "@/components/tracks/SaveButton";
 import { formatDuration } from "@/lib/utils";
 import type { TrackDTO } from "@/lib/dto";
 
@@ -37,13 +39,23 @@ export function TrackCard({ track }: { track: TrackDTO }) {
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm text-star">{track.title}</p>
+        {track.id ? (
+          <Link
+            href={`/track/${track.id}`}
+            className="block truncate text-sm text-star hover:underline"
+          >
+            {track.title}
+          </Link>
+        ) : (
+          <p className="truncate text-sm text-star">{track.title}</p>
+        )}
         <p className="truncate text-xs text-stardust">{track.artist.name}</p>
       </div>
 
       <span className="font-mono text-xs text-faint tabular-nums">
         {formatDuration(track.durationMs)}
       </span>
+      <SaveButton track={track} />
     </div>
   );
 }
