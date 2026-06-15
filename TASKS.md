@@ -51,12 +51,12 @@ Docs to read before any phase: `PRODUCT_SPEC.md` (what), `ARCHITECTURE.md` (how)
 
 ## Phase 5 — Save Tracks (Library)
 
-- [ ] `services/library.ts` — save flow: re-fetch canonical metadata via `musicProvider.getTrack(providerId)` (client sends `provider` + `providerId` only), then transactional artist/track upsert + save (idempotent)
-- [ ] `POST /api/tracks/save`, `DELETE /api/tracks/save/[trackId]`, `GET /api/library` (cursor pagination)
-- [ ] `SaveButton` with optimistic toggle; `/library` page; `/track/[id]` detail page
-- [ ] Vitest: upsert idempotency, cross-user isolation
+- [x] `services/library.ts` — save flow: re-fetch via `musicProvider.getTrack(providerId)` (client sends `provider` + `providerId` only), then transactional artist/track upsert + save (idempotent). Split into `saveTrackByProviderId` (fetch) + `persistSavedTrack` (DB) for testability; also `unsaveTrack`, `listLibrary`, `getTrackById`
+- [x] `POST /api/tracks/save` (201/200), `DELETE /api/tracks/save/[trackId]` (204/404), `GET /api/library` (cursor pagination)
+- [x] `SaveButton` with optimistic toggle; `/library` page (`useLibrary` infinite query + empty state); `/track/[id]` detail page
+- [x] Vitest: upsert idempotency + cross-user isolation (DB integration, self-skips without a DB)
 
-**Accept:** save from search → appears in `/library`; unsave removes it; saving twice creates one row.
+**Accept:** save from search → appears in `/library`; unsave removes it; saving twice creates one row. ✓ verified end-to-end (201→200 idempotent, library lists/empties, search `saved` flag flips, genres enriched on save, 204/404/400 paths).
 
 ## Phase 6 — Music Memory Journal
 
