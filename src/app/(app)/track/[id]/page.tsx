@@ -6,6 +6,7 @@ import { z } from "zod";
 import { auth } from "@/server/auth";
 import { getTrackById } from "@/server/services/library";
 import { TrackDetailActions } from "@/components/tracks/TrackDetailActions";
+import { TrackMemories } from "@/components/memories/TrackMemories";
 import { formatDuration } from "@/lib/utils";
 
 export const metadata = { title: "Track · VibeVerse" };
@@ -62,10 +63,8 @@ export default async function TrackPage({
       </div>
 
       <section className="mt-12">
-        <h2 className="font-display text-xl font-medium">Memories</h2>
-        <p className="mt-2 text-sm text-stardust">
-          Attaching memories to this track arrives in the journal phase.
-        </p>
+        <h2 className="mb-4 font-display text-xl font-medium">Memories</h2>
+        <TrackMemories trackId={track.id!} />
       </section>
     </div>
   );

@@ -12,6 +12,9 @@ import {
   uuid,
   vector,
 } from "drizzle-orm/pg-core";
+// Mood values live in lib/moods (shared with the client + Zod). The
+// memories_mood_check constraint must match MOODS.
+import { MOODS, type Mood } from "@/lib/moods";
 
 /* -------------------------------------------------------------------------- */
 /* Better Auth tables                                                         */
@@ -76,17 +79,7 @@ export const verification = pgTable("verification", {
 /* Application tables                                                          */
 /* -------------------------------------------------------------------------- */
 
-export const MOODS = [
-  "joyful",
-  "nostalgic",
-  "melancholy",
-  "energetic",
-  "calm",
-  "romantic",
-  "gritty",
-  "dreamy",
-] as const;
-export type Mood = (typeof MOODS)[number];
+export { MOODS, type Mood };
 
 export const artists = pgTable(
   "artists",
