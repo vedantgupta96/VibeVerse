@@ -70,3 +70,30 @@ export type PlaylistSummaryDTO = {
   trackCount: number;
   createdAt: string;
 };
+
+export type TasteGenreDTO = {
+  name: string;
+  count: number;
+};
+
+export type TasteArtistDTO = {
+  id: string;
+  name: string;
+  imageUrl: string | null;
+  count: number;
+};
+
+export type TasteMoodDTO = {
+  mood: Mood;
+  count: number;
+};
+
+export type TasteProfileDTO = {
+  summary: string;
+  listenerArchetype: string;
+  traits: string[];
+  topGenres: TasteGenreDTO[];
+  topArtists: TasteArtistDTO[];
+  moodDistribution: TasteMoodDTO[];
+  generatedAt: string;
+};

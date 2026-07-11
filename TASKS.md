@@ -80,12 +80,12 @@ Docs to read before any phase: `PRODUCT_SPEC.md` (what), `ARCHITECTURE.md` (how)
 
 ## Phase 8 — Taste Dashboard
 
-- [ ] `services/taste.ts` — SQL aggregations (genres/artists/moods), ≥ 5-track threshold, 2-min cooldown
-- [ ] `server/ai/taste.ts` — structured summary (summary/archetype/traits)
-- [ ] Routes: get / refresh
-- [ ] `/taste` page: `TasteDnaOrb`, summary, genre bars, artist row, mood distribution; empty state under threshold
+- [x] `services/taste.ts` — SQL aggregations (genres/artists/moods), ≥ 5-track threshold, 2-min cooldown
+- [x] `server/ai/taste.ts` — structured summary (summary/archetype/traits)
+- [x] Routes: get / refresh
+- [x] `/taste` page: `TasteDnaOrb`, summary, genre bars, artist row, mood distribution; empty state under threshold
 
-**Accept:** with ≥ 5 saved tracks, refresh produces a coherent profile; counts match the library; cooldown returns 429.
+**Accept:** with ≥ 5 saved tracks, refresh produces a coherent profile; counts match the library; cooldown returns 429. Automated verification passes; live acceptance remains pending a reachable PostgreSQL database and Anthropic credentials.
 
 ## Phase 9 — Music Galaxy (2D)
 
