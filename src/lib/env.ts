@@ -1,12 +1,15 @@
 import { z } from "zod";
 
 /**
- * DATABASE_URL is the only hard requirement in Phase 1. Auth vars become
- * required in Phase 3 and AI keys in Phases 6–7; their routes guard at
- * call time so the app shell runs without them.
+ * External service credentials are optional at build time. Routes that need
+ * them validate availability at request time so preview builds can render the
+ * app shell before every backing service has been provisioned.
  */
 export const envSchema = z.object({
-  DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
+  DATABASE_URL: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z.string().min(1).optional(),
+  ),
 
   BETTER_AUTH_SECRET: z.string().optional(),
   BETTER_AUTH_URL: z.string().default("http://localhost:3000"),

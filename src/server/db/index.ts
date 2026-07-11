@@ -7,7 +7,8 @@ import * as schema from "./schema";
 const globalForDb = globalThis as unknown as { pgPool?: Pool };
 
 export const pool =
-  globalForDb.pgPool ?? new Pool({ connectionString: env.DATABASE_URL });
+  globalForDb.pgPool ??
+  new Pool(env.DATABASE_URL ? { connectionString: env.DATABASE_URL } : {});
 
 if (process.env.NODE_ENV !== "production") {
   globalForDb.pgPool = pool;
