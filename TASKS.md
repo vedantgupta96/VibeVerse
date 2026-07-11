@@ -89,12 +89,12 @@ Docs to read before any phase: `PRODUCT_SPEC.md` (what), `ARCHITECTURE.md` (how)
 
 ## Phase 9 — Music Galaxy (2D)
 
-- [ ] `services/galaxy.ts` — nodes/edges per `API_CONTRACTS.md`; `GET /api/galaxy`
-- [ ] `GalaxyCanvas`: d3-force layout, canvas render, pan/zoom, hover labels, click → side panel (artist's saved tracks + memories)
-- [ ] Empty state; reduced-motion fallback (static layout)
-- [ ] Vitest: graph builder (weights, shared-genre edges)
+- [x] `services/galaxy.ts` — nodes/edges per `API_CONTRACTS.md`; `GET /api/galaxy`
+- [x] `GalaxyCanvas`: d3-force layout, canvas render, pan/zoom, hover labels, click → side panel (artist's saved tracks + memories)
+- [x] Empty state; reduced-motion fallback (static layout)
+- [x] Vitest: graph builder (weights, shared-genre edges)
 
-**Accept:** 20+ saved tracks across ≥ 3 genres renders clustered constellations at 60 fps; clicking an artist shows their tracks.
+**Accept:** 20+ saved tracks across ≥ 3 genres renders clustered constellations at 60 fps; clicking an artist shows their tracks. ✓ verified live against local Postgres + Deezer: 11 saved tracks across 6 genres produce correct genre/artist nodes, weights, and shared-genre cluster edges; empty graph, 401/405, cross-user isolation, and the inspector's lazy memory load all behave; `/galaxy` renders behind auth (307 → login without a session). 60 fps canvas feel still needs a quick manual browser pass.
 
 **MVP demo script (final check):** sign up → search & save 10 tracks → add 3 memories → generate a playlist → refresh Taste DNA → open the galaxy. Zero console errors, all data persisted across reload.
 

@@ -187,10 +187,13 @@ Errors: `AI_UNAVAILABLE`, `AI_REFUSED`, `PROVIDER_UNAVAILABLE` (if resolution fa
   "edges": [
     { "source": "genre:electronic", "target": "artist:<uuid>", "kind": "genre-artist" },
     { "source": "artist:<uuid>", "target": "artist:<uuid>", "kind": "shared-genre", "weight": 2 }
-  ]
+  ],
+  "tracks": [TrackDTO]
 }
 ```
 `weight` on artist nodes = saved-track count; on genre nodes = total saved tracks in that genre; on shared-genre edges = number of shared genres. Layout (x/y) is **not** included — client computes with d3-force.
+
+`tracks` contains the requesting user's saved-track metadata used by the artist inspector. Memories are not embedded in the graph response; the client loads them lazily for the selected track through the existing `GET /api/memories?trackId=<uuid>` endpoint.
 
 ## Auth (Better Auth, Public)
 

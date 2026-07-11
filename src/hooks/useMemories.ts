@@ -13,7 +13,7 @@ import type { Mood } from "@/lib/moods";
 
 type MemoryPage = { memories: MemoryDTO[]; nextCursor: string | null };
 
-export function useMemories(trackId?: string) {
+export function useMemories(trackId?: string, enabled = true) {
   return useInfiniteQuery({
     queryKey: ["memories", trackId ?? "all"],
     queryFn: ({ pageParam }) =>
@@ -24,6 +24,7 @@ export function useMemories(trackId?: string) {
       ),
     initialPageParam: null as string | null,
     getNextPageParam: (last) => last.nextCursor,
+    enabled,
   });
 }
 

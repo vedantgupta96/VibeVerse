@@ -97,3 +97,34 @@ export type TasteProfileDTO = {
   moodDistribution: TasteMoodDTO[];
   generatedAt: string;
 };
+
+export type GalaxyGenreNodeDTO = {
+  id: string;
+  kind: "genre";
+  label: string;
+  weight: number;
+};
+
+export type GalaxyArtistNodeDTO = {
+  id: string;
+  kind: "artist";
+  label: string;
+  imageUrl: string | null;
+  weight: number;
+  trackIds: string[];
+};
+
+export type GalaxyNodeDTO = GalaxyGenreNodeDTO | GalaxyArtistNodeDTO;
+
+export type GalaxyEdgeDTO = {
+  source: string;
+  target: string;
+  kind: "genre-artist" | "shared-genre";
+  weight?: number;
+};
+
+export type GalaxyResponse = {
+  nodes: GalaxyNodeDTO[];
+  edges: GalaxyEdgeDTO[];
+  tracks: TrackDTO[];
+};
