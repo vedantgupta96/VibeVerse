@@ -60,13 +60,13 @@ Docs to read before any phase: `PRODUCT_SPEC.md` (what), `ARCHITECTURE.md` (how)
 
 ## Phase 6 — Music Memory Journal
 
-- [ ] `server/ai/embeddings.ts` (Voyage `voyage-4-lite`, `output_dimension: 1024`, `input_type` document/query split, failure-tolerant)
-- [ ] `services/memories.ts` — CRUD + embed on create/update + pgvector cosine search
-- [ ] Routes: `POST/GET /api/memories`, `PATCH/DELETE /api/memories/[id]`, `GET /api/memories/search`
-- [ ] `MemoryEditor` + `MoodPicker` on track detail; `/journal` feed with semantic search box
-- [ ] Vitest: ownership enforcement, embedding-failure path still saves
+- [x] `server/ai/embeddings.ts` (Voyage `voyage-4-lite`, `output_dimension: 1024`, `input_type` document/query split; `EmbeddingUnavailableError`, 10s timeout, failure-tolerant)
+- [x] `services/memories.ts` — CRUD + embed-on-write (null on failure) + pgvector cosine search (similarity = 1 − distance)
+- [x] Routes: `POST/GET /api/memories`, `PATCH/DELETE /api/memories/[id]`, `GET /api/memories/search`
+- [x] `MoodPicker` + `MemoryEditor` + `MemoryCard` (inline edit/delete); `TrackMemories` on track detail; `/journal` feed with semantic search box (shared mood module in `lib/moods`)
+- [x] Vitest: ownership enforcement + embedding-failure-still-saves (DB integration, embeddings mocked; 19 tests total)
 
-**Accept:** write a memory on a track; find it on `/journal`; semantic query ("college days") surfaces it without keyword overlap (with real key) or degrades gracefully (without).
+**Accept:** write a memory on a track; find it on `/journal`; semantic query ("college days") surfaces it without keyword overlap (with real key) or degrades gracefully (without). ✓ verified — CRUD + journal feed work; without a key, create saves with null embedding and search returns a handled 502 `AI_UNAVAILABLE` (UI shows "memories still save" message).
 
 ## Phase 7 — AI Playlist Generator
 

@@ -1,6 +1,8 @@
 // Response DTOs shared between the API routes and the client.
 // Mirrors API_CONTRACTS.md → Shared DTOs.
 
+import type { Mood } from "@/lib/moods";
+
 export type ArtistRefDTO = {
   id: string | null; // our UUID once persisted, else null
   providerId: string;
@@ -32,3 +34,14 @@ export type SearchResponse = {
   tracks?: TrackDTO[];
   artists?: ArtistResultDTO[];
 };
+
+export type MemoryDTO = {
+  id: string;
+  content: string;
+  mood: Mood | null;
+  track: TrackDTO;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type MemorySearchResultDTO = MemoryDTO & { similarity: number };
