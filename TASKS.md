@@ -70,13 +70,13 @@ Docs to read before any phase: `PRODUCT_SPEC.md` (what), `ARCHITECTURE.md` (how)
 
 ## Phase 7 — AI Playlist Generator
 
-- [ ] `server/ai/client.ts` (Anthropic singleton; `models.fast/default/strong` from `ANTHROPIC_FAST_MODEL` / `ANTHROPIC_DEFAULT_MODEL` / `ANTHROPIC_STRONG_MODEL`)
-- [ ] `server/ai/playlist.ts` — structured-output concept generation on `models.default` (Zod schema per `ARCHITECTURE.md`), refusal handling
-- [ ] `services/playlists.ts` — taste context (SQL aggregates + memory similarity), candidate resolution via provider (`Promise.allSettled`), transactional persistence, `sparse` flag
-- [ ] Routes: generate / list / detail / delete
-- [ ] `/dj` page: prompt input, `GenerationProgress`, history; `/playlist/[id]` with per-track reasons + save buttons
+- [x] `server/ai/client.ts` (Anthropic singleton; `models.fast/default/strong` from `ANTHROPIC_FAST_MODEL` / `ANTHROPIC_DEFAULT_MODEL` / `ANTHROPIC_STRONG_MODEL`)
+- [x] `server/ai/playlist.ts` — structured-output concept generation on `models.default` (Zod schema per `ARCHITECTURE.md`), refusal handling
+- [x] `services/playlists.ts` — taste context (SQL aggregates + memory similarity), candidate resolution via provider (`Promise.allSettled`), transactional persistence, `sparse` flag
+- [x] Routes: generate / list / detail / delete
+- [x] `/dj` page: prompt input, `GenerationProgress`, history; `/playlist/[id]` with per-track reasons + save buttons
 
-**Accept:** "late-night coding in Chicago during winter" → titled playlist with ≥ 10 real, previewable tracks and one-line reasons in < 30 s.
+**Accept:** "late-night coding in Chicago during winter" → titled playlist with ≥ 10 real, previewable tracks and one-line reasons in < 30 s. Automated verification passes; live acceptance remains pending a reachable PostgreSQL database plus Anthropic/Voyage credentials.
 
 ## Phase 8 — Taste Dashboard
 

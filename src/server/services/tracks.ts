@@ -1,9 +1,63 @@
 import "server-only";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/server/db";
-import { savedTracks, tracks } from "@/server/db/schema";
+import { artists, savedTracks, tracks } from "@/server/db/schema";
 import type { ProviderTrack } from "@/server/music/provider";
 import type { TrackDTO } from "@/lib/dto";
+
+type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/** Upsert canonical provider metadata without adding the track to a library. */
+export async function upsertProviderTrack(
+  tx: DbTransaction,
+  pt: ProviderTrack,
+): Promise<{ trackId: string; artistId: string }> {
+  const [artistRow] = await tx
+    .insert(artists)
+    .values({
+      provider: pt.artist.provider,
+      providerId: pt.artist.providerId,
+      name: pt.artist.name,
+      imageUrl: pt.artist.imageUrl,
+      genres: pt.artist.genres,
+    })
+    .onConflictDoUpdate({
+      target: [artists.provider, artists.providerId],
+      set: {
+        name: sql`excluded.name`,
+        imageUrl: sql`coalesce(excluded.image_url, ${artists.imageUrl})`,
+        genres: sql`case when coalesce(array_length(excluded.genres, 1), 0) > 0 then excluded.genres else ${artists.genres} end`,
+      },
+    })
+    .returning({ id: artists.id });
+
+  const [trackRow] = await tx
+    .insert(tracks)
+    .values({
+      provider: pt.provider,
+      providerId: pt.providerId,
+      title: pt.title,
+      artistId: artistRow.id,
+      albumName: pt.albumName,
+      albumImageUrl: pt.albumImageUrl,
+      previewUrl: pt.previewUrl,
+      durationMs: pt.durationMs,
+    })
+    .onConflictDoUpdate({
+      target: [tracks.provider, tracks.providerId],
+      set: {
+        title: sql`excluded.title`,
+        artistId: sql`excluded.artist_id`,
+        albumName: sql`excluded.album_name`,
+        albumImageUrl: sql`excluded.album_image_url`,
+        previewUrl: sql`excluded.preview_url`,
+        durationMs: sql`excluded.duration_ms`,
+      },
+    })
+    .returning({ id: tracks.id });
+
+  return { trackId: trackRow.id, artistId: artistRow.id };
+}
 
 /**
  * Map provider search results to TrackDTOs, enriching each with our DB id and

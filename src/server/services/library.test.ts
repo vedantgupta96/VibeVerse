@@ -27,6 +27,7 @@ if (hasDbUrl) {
 }
 
 describe.skipIf(!dbReady)("library save (db integration)", () => {
+  if (!dbReady) return;
   const db = dbmod!.db;
   const { user, savedTracks, tracks, artists } = schema!;
   const { persistSavedTrack, unsaveTrack, listLibrary } = svc!;
