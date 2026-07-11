@@ -32,7 +32,6 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "@rolldown/binding-darwin-arm64": "^1.1.1",
     "@tailwindcss/postcss": "^4",
     "@types/d3-force": "^3.0.10",
     "@types/node": "^20",
