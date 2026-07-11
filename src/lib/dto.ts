@@ -45,3 +45,28 @@ export type MemoryDTO = {
 };
 
 export type MemorySearchResultDTO = MemoryDTO & { similarity: number };
+
+export type PlaylistTrackDTO = {
+  position: number;
+  reason: string;
+  track: TrackDTO;
+};
+
+export type PlaylistDTO = {
+  id: string;
+  title: string;
+  prompt: string;
+  vibeDescription: string;
+  createdAt: string;
+  tracks: PlaylistTrackDTO[];
+  sparse: boolean;
+};
+
+export type PlaylistSummaryDTO = {
+  id: string;
+  title: string;
+  prompt: string;
+  vibeDescription: string;
+  trackCount: number;
+  createdAt: string;
+};

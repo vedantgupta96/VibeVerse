@@ -37,6 +37,7 @@ if (hasDbUrl) {
 }
 
 describe.skipIf(!dbReady)("memories service (db integration)", () => {
+  if (!dbReady) return;
   const db = dbmod!.db;
   const { user, artists, tracks, memories } = schema!;
   const { createMemory, listMemories, updateMemory, deleteMemory } = svc!;

@@ -1,11 +1,12 @@
 import "server-only";
-import { and, desc, eq, lt, sql } from "drizzle-orm";
+import { and, desc, eq, lt } from "drizzle-orm";
 import { db } from "@/server/db";
 import { artists, savedTracks, tracks } from "@/server/db/schema";
 import { musicProvider } from "@/server/music/deezer";
 import { ApiError } from "@/lib/errors";
 import type { ProviderTrack } from "@/server/music/provider";
 import type { TrackDTO } from "@/lib/dto";
+import { upsertProviderTrack } from "@/server/services/tracks";
 
 const LIBRARY_PAGE_SIZE = 30;
 
@@ -19,61 +20,18 @@ export async function persistSavedTrack(
   pt: ProviderTrack,
 ): Promise<{ track: TrackDTO; created: boolean }> {
   return db.transaction(async (tx) => {
-    const [artistRow] = await tx
-      .insert(artists)
-      .values({
-        provider: pt.artist.provider,
-        providerId: pt.artist.providerId,
-        name: pt.artist.name,
-        imageUrl: pt.artist.imageUrl,
-        genres: pt.artist.genres,
-      })
-      .onConflictDoUpdate({
-        target: [artists.provider, artists.providerId],
-        set: {
-          name: sql`excluded.name`,
-          imageUrl: sql`coalesce(excluded.image_url, ${artists.imageUrl})`,
-          // keep existing genres unless the new fetch actually has some
-          genres: sql`case when coalesce(array_length(excluded.genres, 1), 0) > 0 then excluded.genres else ${artists.genres} end`,
-        },
-      })
-      .returning({ id: artists.id });
-
-    const [trackRow] = await tx
-      .insert(tracks)
-      .values({
-        provider: pt.provider,
-        providerId: pt.providerId,
-        title: pt.title,
-        artistId: artistRow.id,
-        albumName: pt.albumName,
-        albumImageUrl: pt.albumImageUrl,
-        previewUrl: pt.previewUrl,
-        durationMs: pt.durationMs,
-      })
-      .onConflictDoUpdate({
-        target: [tracks.provider, tracks.providerId],
-        set: {
-          title: sql`excluded.title`,
-          artistId: sql`excluded.artist_id`,
-          albumName: sql`excluded.album_name`,
-          albumImageUrl: sql`excluded.album_image_url`,
-          previewUrl: sql`excluded.preview_url`,
-          durationMs: sql`excluded.duration_ms`,
-        },
-      })
-      .returning({ id: tracks.id });
+    const { trackId, artistId } = await upsertProviderTrack(tx, pt);
 
     const inserted = await tx
       .insert(savedTracks)
-      .values({ userId, trackId: trackRow.id })
+      .values({ userId, trackId })
       .onConflictDoNothing({
         target: [savedTracks.userId, savedTracks.trackId],
       })
       .returning({ id: savedTracks.id });
 
     const track: TrackDTO = {
-      id: trackRow.id,
+      id: trackId,
       provider: "deezer",
       providerId: pt.providerId,
       title: pt.title,
@@ -82,7 +40,7 @@ export async function persistSavedTrack(
       albumName: pt.albumName,
       albumImageUrl: pt.albumImageUrl,
       artist: {
-        id: artistRow.id,
+        id: artistId,
         providerId: pt.artist.providerId,
         name: pt.artist.name,
         imageUrl: pt.artist.imageUrl,

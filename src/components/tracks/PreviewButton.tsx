@@ -19,7 +19,9 @@ export function PreviewButton({ track }: { track: PlayerTrack }) {
       aria-label={playing ? `Pause ${track.title}` : `Play ${track.title}`}
       className={cn(
         "absolute inset-0 flex items-center justify-center bg-void/55 text-star transition-opacity",
-        playing ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+        playing
+          ? "opacity-100"
+          : "opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100",
       )}
     >
       {playing ? (
