@@ -4,8 +4,9 @@ import { envSchema } from "./env";
 const base = { DATABASE_URL: "postgres://test:test@localhost:5432/test" };
 
 describe("envSchema", () => {
-  it("requires DATABASE_URL", () => {
-    expect(envSchema.safeParse({}).success).toBe(false);
+  it("allows preview builds without a database", () => {
+    expect(envSchema.safeParse({}).success).toBe(true);
+    expect(envSchema.parse({ DATABASE_URL: "" }).DATABASE_URL).toBeUndefined();
     expect(envSchema.safeParse(base).success).toBe(true);
   });
 
