@@ -1,10 +1,10 @@
 import { pool } from "@/server/db";
 import { env } from "@/lib/env";
-import { ApiError, toErrorResponse } from "@/lib/errors";
+import { toErrorResponse } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
   if (!env.DATABASE_URL) {
     return Response.json(
       {
@@ -21,7 +21,7 @@ export async function GET() {
   try {
     await pool.query("SELECT 1");
     return Response.json({ ok: true });
-  } catch {
-    return toErrorResponse(new ApiError("INTERNAL", "Database unreachable"));
+  } catch (error) {
+    return toErrorResponse(error, request);
   }
 }

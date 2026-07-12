@@ -34,7 +34,7 @@ Docs to read before any phase: `PRODUCT_SPEC.md` (what), `ARCHITECTURE.md` (how)
 - [x] Auth tables — already created in Phase 2 migration `0000`; the adapter points at them (no regeneration)
 - [x] `app/api/auth/[...all]/route.ts`; auth client in `lib/auth-client.ts`
 - [x] `/login` + `/signup` pages styled per design system (+ shared `(auth)` layout)
-- [x] `middleware.ts` gate for `/(app)`; `requireUser()` helper; `GET /api/me` to exercise it
+- [x] Auth page gate (migrated to Next 16 `proxy.ts` in Phase 11); `requireUser()` helper; `GET /api/me` to exercise it
 - [x] `(app)/layout.tsx` AppShell (Sidebar, UserMenu, sign out) + `/home` dashboard; UI primitives (`button`/`input`/`label`)
 
 **Accept:** sign up → land on `/home`; sign out → `/home` redirects to `/login`; API routes 401 without a session. ✓ verified end-to-end via curl.
@@ -107,7 +107,7 @@ Docs to read before any phase: `PRODUCT_SPEC.md` (what), `ARCHITECTURE.md` (how)
 - [x] 15 API routes under `/api/rooms` (14 REST + 1 SSE), house style throughout
 - [x] AI vibe: `server/ai/roomVibe.ts` — "read the room" blurb on `models.fast`, structured output, 60s cooldown; no `thinking` and no `output_config.effort` (Haiku 4.5 rejects the `effort` parameter outright, confirmed against the live API)
 - [x] SSE route `app/api/rooms/[id]/events/route.ts`: pre-stream 404/403, `retry:`/`: connected`/`: ping` framing, cleanup on abort, no Last-Event-ID replay
-- [x] Client: `useRooms`/`useRoom` hooks (snapshot polling + SSE + presence heartbeat + mutations); `RoomList`, `CreateRoomForm`, `JoinByCodeForm`, `RoomExperience`, `NowPlayingCard`, `QueuePanel` (+ `AddTrackInput` typeahead), `ReactionBar`, `ReactionOverlay`, `PresenceRoster`, `VibeSummaryCard`; `/rooms` + `/rooms/[id]` pages; Sidebar nav entry (`Users` icon); `middleware.ts` matcher extended
+- [x] Client: `useRooms`/`useRoom` hooks (snapshot polling + SSE + presence heartbeat + mutations); `RoomList`, `CreateRoomForm`, `JoinByCodeForm`, `RoomExperience`, `NowPlayingCard`, `QueuePanel` (+ `AddTrackInput` typeahead), `ReactionBar`, `ReactionOverlay`, `PresenceRoster`, `VibeSummaryCard`; `/rooms` + `/rooms/[id]` pages; Sidebar nav entry (`Users` icon); authenticated page matcher extended (now in `proxy.ts`)
 - [x] Docs: `DATABASE.md`, `API_CONTRACTS.md`, `ARCHITECTURE.md`, `DESIGN_SYSTEM.md` updated in this change
 
 **Accept:**
@@ -119,6 +119,19 @@ Docs to read before any phase: `PRODUCT_SPEC.md` (what), `ARCHITECTURE.md` (how)
 - [x] "Read the room" blurb visible in both browsers ≤10s; retry inside 60s shows cooldown; without `ANTHROPIC_API_KEY` the card degrades, nothing else breaks.
 - [x] All of the above with `REDIS_URL` unset (in-process bus); with SSE blocked, the room still converges via the 15s poll.
 - [x] `curl -N` shows heartbeats/frames; 403 non-member, 401 no session. Fresh-DB migration clean; lint/typecheck/tests green; all five docs updated in-PR. ✓ verified via curl end-to-end with both `REDIS_URL` set and unset (restarting between): sign-up → create room → join by code → Deezer search → queue → vote → advance → react (429 past the 5th) → AI vibe (429 within cooldown) → `curl -N` events showing `retry:`, `: connected`, `: ping`, and `data:` frames for every event type; Redis mode additionally confirmed via `redis-cli monitor`/`pubsub channels` (subscribe → publish → clean unsubscribe on disconnect). ✓ two isolated Chrome contexts verified the visual/timing criteria on 2026-07-12, including local-only preview state, stale presence after tab close, in-process realtime with `REDIS_URL` unset, and a blocked-SSE vote appearing through the fallback poll in 15.1s.
+
+## Phase 11 — Beta Readiness
+
+- [x] Supabase-managed Postgres readiness without SDK coupling: optional direct migration URL, pooled runtime URL, finite production pool, environment example, and deployment/rollback runbook.
+- [x] Operational diagnostics: Next 16 request proxy, safe `x-request-id` propagation, redacted structured logger, error IDs for 5xx responses, and focused tests.
+- [x] Accessible shell remediation: skip links/`main` landmarks, labeled nav + active state, and a persistent 4+More mobile navigation with safe-area/player spacing.
+- [x] Playwright browser suite for protected-route recovery, signup, and the two-context room create/join/roster/reaction/rate-limit/leave/rejoin journey with no AI/provider calls.
+- [x] axe gates for login, signup, authenticated home, rooms list, and joined room on desktop plus login/home/room at 390px.
+- [x] GitHub Actions gate with pgvector PostgreSQL + Redis services, migrations, lint, typecheck, DB-backed Vitest, build, and Playwright Chromium.
+- [x] Ethical beta measurement and five-session moderated research plans; no behavioral tracking implementation.
+- [ ] Acceptance verification: lint, typecheck, existing DB-backed tests, production build, local Playwright/axe with `REDIS_URL` unset, and CI workflow syntax all pass.
+
+**Accept:** code/runbook readiness for Supabase + Vercel without claiming external deployment; correlated/redacted 5xx diagnostics; no unresolved critical/serious automated axe findings on gated states; stable two-user browser flow; manual VoiceOver/zoom/disabled-user checks and account-bound deployment remain explicitly open.
 
 ---
 

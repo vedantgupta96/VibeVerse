@@ -33,6 +33,6 @@ export async function GET(request: Request) {
     const tracks = await enrichTracks(user.id, providerTracks);
     return Response.json({ tracks });
   } catch (error) {
-    return toErrorResponse(error);
+    return toErrorResponse(error, request);
   }
 }

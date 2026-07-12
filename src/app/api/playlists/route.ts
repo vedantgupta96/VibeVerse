@@ -5,12 +5,12 @@ import { listPlaylists } from "@/server/services/playlists";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const user = await requireUser(await headers());
     const playlists = await listPlaylists(user.id);
     return Response.json({ playlists });
   } catch (error) {
-    return toErrorResponse(error);
+    return toErrorResponse(error, request);
   }
 }

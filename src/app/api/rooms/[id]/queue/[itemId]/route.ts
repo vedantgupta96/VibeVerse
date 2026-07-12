@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 type RouteContext = { params: Promise<{ id: string; itemId: string }> };
 
-export async function DELETE(_request: Request, { params }: RouteContext) {
+export async function DELETE(request: Request, { params }: RouteContext) {
   try {
     const user = await requireUser(await headers());
     const { id, itemId } = await params;
@@ -18,6 +18,6 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
     await removeQueueItem(user.id, roomId, queueItemId);
     return new Response(null, { status: 204 });
   } catch (error) {
-    return toErrorResponse(error);
+    return toErrorResponse(error, request);
   }
 }

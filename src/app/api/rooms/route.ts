@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     const room = await createRoom(user.id, name);
     return Response.json({ room }, { status: 201 });
   } catch (error) {
-    return toErrorResponse(error);
+    return toErrorResponse(error, request);
   }
 }
 
@@ -31,6 +31,6 @@ export async function GET(request: Request) {
     const result = await listRooms(cursor, limit);
     return Response.json(result);
   } catch (error) {
-    return toErrorResponse(error);
+    return toErrorResponse(error, request);
   }
 }

@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: vibeverse
+          POSTGRES_PASSWORD: vibeverse
+          POSTGRES_DB: vibeverse
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vibeverse -d vibeverse"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://vibeverse:vibeverse@127.0.0.1:5432/vibeverse
+      BETTER_AUTH_URL: http://127.0.0.1:3107
+      BETTER_AUTH_SECRET: ci-only-deterministic-secret-at-least-32-characters
+      REDIS_URL: ""
+      CI: true
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+      - run: npm ci
+      - run: npm run db:migrate
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e

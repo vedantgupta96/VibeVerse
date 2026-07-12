@@ -7,7 +7,18 @@ describe("envSchema", () => {
   it("allows preview builds without a database", () => {
     expect(envSchema.safeParse({}).success).toBe(true);
     expect(envSchema.parse({ DATABASE_URL: "" }).DATABASE_URL).toBeUndefined();
+    expect(
+      envSchema.parse({ DATABASE_DIRECT_URL: "" }).DATABASE_DIRECT_URL,
+    ).toBeUndefined();
     expect(envSchema.safeParse(base).success).toBe(true);
+  });
+
+  it("accepts a separate direct database URL for migrations", () => {
+    const env = envSchema.parse({
+      ...base,
+      DATABASE_DIRECT_URL: "postgres://direct:test@localhost:5432/test",
+    });
+    expect(env.DATABASE_DIRECT_URL).toContain("postgres://direct");
   });
 
   it("applies the model-tier defaults", () => {

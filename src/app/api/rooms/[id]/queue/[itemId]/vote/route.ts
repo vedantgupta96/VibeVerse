@@ -20,11 +20,11 @@ export async function PUT(request: Request, { params }: RouteContext) {
     const item = await castVote(user.id, roomId, queueItemId, value);
     return Response.json({ item });
   } catch (error) {
-    return toErrorResponse(error);
+    return toErrorResponse(error, request);
   }
 }
 
-export async function DELETE(_request: Request, { params }: RouteContext) {
+export async function DELETE(request: Request, { params }: RouteContext) {
   try {
     const user = await requireUser(await headers());
     const { id, itemId } = await params;
@@ -34,6 +34,6 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
     await clearVote(user.id, roomId, queueItemId);
     return new Response(null, { status: 204 });
   } catch (error) {
-    return toErrorResponse(error);
+    return toErrorResponse(error, request);
   }
 }

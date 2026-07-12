@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 // Returns the current user, or the standard 401 envelope when unauthenticated.
 // Also the reference for how Phase 4+ protected routes call requireUser().
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const user = await requireUser(await headers());
     return Response.json({
@@ -18,6 +18,6 @@ export async function GET() {
       },
     });
   } catch (error) {
-    return toErrorResponse(error);
+    return toErrorResponse(error, request);
   }
 }

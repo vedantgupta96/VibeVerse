@@ -28,7 +28,7 @@ export async function GET(request: Request, { params }: RouteContext) {
     roomId = roomIdSchema.parse((await params).id);
     await assertRoomMember(user.id, roomId); // 404/403 before we ever open the stream
   } catch (error) {
-    return toErrorResponse(error);
+    return toErrorResponse(error, request);
   }
 
   const encoder = new TextEncoder();

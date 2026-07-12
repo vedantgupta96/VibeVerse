@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function POST(_request: Request, { params }: RouteContext) {
+export async function POST(request: Request, { params }: RouteContext) {
   try {
     const user = await requireUser(await headers());
     const id = roomIdSchema.parse((await params).id);
@@ -16,6 +16,6 @@ export async function POST(_request: Request, { params }: RouteContext) {
     const nowPlaying = await advanceNowPlaying(user.id, id);
     return Response.json({ nowPlaying });
   } catch (error) {
-    return toErrorResponse(error);
+    return toErrorResponse(error, request);
   }
 }

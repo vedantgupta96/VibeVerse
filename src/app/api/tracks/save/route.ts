@@ -15,6 +15,6 @@ export async function POST(request: Request) {
     const { track, created } = await saveTrackByProviderId(user.id, providerId);
     return Response.json({ track }, { status: created ? 201 : 200 });
   } catch (error) {
-    return toErrorResponse(error);
+    return toErrorResponse(error, request);
   }
 }

@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(_request: Request, { params }: RouteContext) {
+export async function GET(request: Request, { params }: RouteContext) {
   try {
     const user = await requireUser(await headers());
     const id = roomIdSchema.parse((await params).id);
@@ -16,6 +16,6 @@ export async function GET(_request: Request, { params }: RouteContext) {
     const room = await getRoomSnapshot(user.id, id);
     return Response.json({ room });
   } catch (error) {
-    return toErrorResponse(error);
+    return toErrorResponse(error, request);
   }
 }

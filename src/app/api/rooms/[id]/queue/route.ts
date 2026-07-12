@@ -18,6 +18,6 @@ export async function POST(request: Request, { params }: RouteContext) {
     const item = await addToQueue(user.id, id, providerId);
     return Response.json({ item }, { status: 201 });
   } catch (error) {
-    return toErrorResponse(error);
+    return toErrorResponse(error, request);
   }
 }

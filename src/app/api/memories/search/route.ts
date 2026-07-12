@@ -15,6 +15,6 @@ export async function GET(request: Request) {
     const memories = await searchMemories(user.id, q);
     return Response.json({ memories });
   } catch (error) {
-    return toErrorResponse(error);
+    return toErrorResponse(error, request);
   }
 }

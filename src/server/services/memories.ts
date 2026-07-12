@@ -18,6 +18,7 @@ import {
 import { ApiError } from "@/lib/errors";
 import type { Mood } from "@/lib/moods";
 import type { MemoryDTO, MemorySearchResultDTO } from "@/lib/dto";
+import { logger } from "@/server/logger";
 
 const FEED_PAGE_SIZE = 30;
 const SEARCH_LIMIT = 10;
@@ -97,7 +98,7 @@ async function safeEmbed(content: string): Promise<number[] | null> {
   try {
     return await embedDocument(content);
   } catch (error) {
-    console.warn("[memories] embedding failed, saving without vector:", error);
+    logger.warn("memory.embedding_degraded", { error });
     return null;
   }
 }

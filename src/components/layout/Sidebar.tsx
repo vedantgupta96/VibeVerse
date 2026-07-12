@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const NAV = [
+export const NAV = [
   { href: "/home", label: "Home", icon: Home },
   { href: "/search", label: "Search", icon: Search },
   { href: "/library", label: "Library", icon: Library },
@@ -27,6 +27,13 @@ const NAV = [
   { href: "/rooms", label: "Vibe Rooms", icon: Users },
 ] as const;
 
+export function isNavItemActive(pathname: string, href: string): boolean {
+  if (pathname === href || pathname.startsWith(`${href}/`)) return true;
+  if (href === "/library" && pathname.startsWith("/track/")) return true;
+  if (href === "/dj" && pathname.startsWith("/playlist/")) return true;
+  return false;
+}
+
 export function Sidebar() {
   const pathname = usePathname();
 
@@ -38,15 +45,16 @@ export function Sidebar() {
       >
         Vibe<span className="text-gradient-aurora">Verse</span>
       </Link>
-      <nav className="flex flex-col gap-1">
+      <nav aria-label="Primary navigation" className="flex flex-col gap-1">
         {NAV.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href || pathname.startsWith(`${href}/`);
+          const active = isNavItemActive(pathname, href);
           return (
             <Link
               key={href}
               href={href}
+              aria-current={active ? "page" : undefined}
               className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                "flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
                 active
                   ? "bg-space-3 text-star"
                   : "text-stardust hover:bg-space-2 hover:text-star",

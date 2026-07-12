@@ -18,6 +18,6 @@ export async function POST(request: Request, { params }: RouteContext) {
     await react({ id: user.id, name: user.name }, id, mood);
     return new Response(null, { status: 202 });
   } catch (error) {
-    return toErrorResponse(error);
+    return toErrorResponse(error, request);
   }
 }

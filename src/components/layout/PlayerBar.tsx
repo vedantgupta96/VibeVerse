@@ -13,7 +13,7 @@ export function PlayerBar() {
   if (!current) return null;
 
   return (
-    <div className="glass fixed inset-x-3 bottom-3 z-20 flex items-center gap-3 rounded-lg px-4 py-3 md:left-[15.5rem]">
+    <div className="glass fixed inset-x-3 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-20 flex items-center gap-3 rounded-lg px-4 py-3 md:bottom-3 md:left-[15.5rem]">
       <div className="relative size-11 shrink-0 overflow-hidden rounded-md bg-space-3">
         {current.albumImageUrl ? (
           <Image
