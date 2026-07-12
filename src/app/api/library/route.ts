@@ -18,6 +18,6 @@ export async function GET(request: Request) {
     const result = await listLibrary(user.id, cursor, limit);
     return Response.json(result);
   } catch (error) {
-    return toErrorResponse(error);
+    return toErrorResponse(error, request);
   }
 }

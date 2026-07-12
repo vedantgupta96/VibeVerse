@@ -23,12 +23,12 @@ export async function PATCH(
     const memory = await updateMemory(user.id, id, input);
     return Response.json({ memory });
   } catch (error) {
-    return toErrorResponse(error);
+    return toErrorResponse(error, request);
   }
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
@@ -40,6 +40,6 @@ export async function DELETE(
     if (!removed) throw new ApiError("NOT_FOUND", "Memory not found");
     return new Response(null, { status: 204 });
   } catch (error) {
-    return toErrorResponse(error);
+    return toErrorResponse(error, request);
   }
 }

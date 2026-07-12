@@ -2,6 +2,7 @@ import "server-only";
 import Redis from "ioredis";
 import { env } from "@/lib/env";
 import type { RoomEvent } from "@/lib/realtime";
+import { logger } from "@/server/logger";
 
 type Handler = (event: RoomEvent) => void;
 
@@ -42,7 +43,7 @@ function publishInProcess(channel: string, event: RoomEvent): void {
     try {
       handler(event);
     } catch (error) {
-      console.error("[realtime] handler failed:", error);
+      logger.error("realtime.handler_failed", { channel, error });
     }
   }
 }
@@ -74,14 +75,14 @@ function getRedisClients(): { pub: Redis; sub: Redis } | null {
   if (!globalForBus.roomBusRedisPub) {
     const pub = new Redis(env.REDIS_URL);
     pub.on("error", (error) =>
-      console.error("[realtime] redis publisher error:", error),
+      logger.error("realtime.redis_publisher_error", { error }),
     );
     globalForBus.roomBusRedisPub = pub;
   }
   if (!globalForBus.roomBusRedisSub) {
     const sub = new Redis(env.REDIS_URL);
     sub.on("error", (error) =>
-      console.error("[realtime] redis subscriber error:", error),
+      logger.error("realtime.redis_subscriber_error", { error }),
     );
     sub.on("message", (channel: string, message: string) => {
       let event: RoomEvent;
@@ -115,7 +116,7 @@ export async function publishRoomEvent(
       await redis.pub.publish(channel, JSON.stringify(event));
       return;
     } catch (error) {
-      console.error("[realtime] redis publish failed:", error);
+      logger.error("realtime.redis_publish_failed", { channel, error });
     }
   }
   publishInProcess(channel, event);
@@ -138,7 +139,7 @@ export async function subscribeToRoom(
     try {
       await redis.sub.subscribe(channel);
     } catch (error) {
-      console.error("[realtime] redis subscribe failed:", error);
+      logger.error("realtime.redis_subscribe_failed", { channel, error });
     }
   }
 
@@ -148,7 +149,7 @@ export async function subscribeToRoom(
       redis.sub
         .unsubscribe(channel)
         .catch((error) =>
-          console.error("[realtime] redis unsubscribe failed:", error),
+          logger.error("realtime.redis_unsubscribe_failed", { channel, error }),
         );
     }
   };

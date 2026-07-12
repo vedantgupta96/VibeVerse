@@ -10,6 +10,10 @@ export const envSchema = z.object({
     (value) => (value === "" ? undefined : value),
     z.string().min(1).optional(),
   ),
+  DATABASE_DIRECT_URL: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z.string().min(1).optional(),
+  ),
 
   BETTER_AUTH_SECRET: z.string().optional(),
   BETTER_AUTH_URL: z.string().default("http://localhost:3000"),

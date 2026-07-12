@@ -1,6 +1,10 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { ApiError, toErrorResponse } from "./errors";
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe("ApiError", () => {
   it("derives HTTP status from the error code", () => {
@@ -61,7 +65,40 @@ describe("toErrorResponse", () => {
     expect(res.status).toBe(500);
     const body = await res.json();
     expect(body.error.code).toBe("INTERNAL");
+    expect(body.error.details.errorId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f-]{27}$/,
+    );
+    expect(res.headers.get("x-error-id")).toBe(body.error.details.errorId);
     expect(JSON.stringify(body)).not.toContain("secret stack detail");
     consoleError.mockRestore();
+  });
+
+  it("logs server failures with route and request correlation", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    const request = new Request("http://localhost/api/example", {
+      method: "POST",
+      headers: { "x-request-id": "upstream-123" },
+    });
+
+    const res = toErrorResponse(new Error("boom"), request);
+    expect(res.status).toBe(500);
+    expect(consoleError).toHaveBeenCalledWith(
+      "[error] api.request_failed",
+      expect.objectContaining({
+        route: "/api/example",
+        method: "POST",
+        requestId: "upstream-123",
+      }),
+    );
+  });
+
+  it("does not log known 4xx errors as server failures", () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    toErrorResponse(new ApiError("FORBIDDEN", "No access"));
+    expect(consoleError).not.toHaveBeenCalled();
   });
 });

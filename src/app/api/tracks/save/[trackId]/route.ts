@@ -7,7 +7,7 @@ import { ApiError, toErrorResponse } from "@/lib/errors";
 export const dynamic = "force-dynamic";
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ trackId: string }> },
 ) {
   try {
@@ -21,6 +21,6 @@ export async function DELETE(
     }
     return new Response(null, { status: 204 });
   } catch (error) {
-    return toErrorResponse(error);
+    return toErrorResponse(error, request);
   }
 }

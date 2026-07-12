@@ -24,7 +24,7 @@ Three rules that keep it premium:
   /* Text */
   --color-star: #F2EFFF;        /* primary text */
   --color-stardust: #A99FC4;    /* secondary text */
-  --color-faint: #5E5678;       /* tertiary / placeholders */
+  --color-faint: #8A80A9;       /* tertiary / placeholders; AA on raised surfaces */
 
   /* Aurora (brand accents) */
   --color-aurora-violet: #8B5CF6;

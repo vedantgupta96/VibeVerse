@@ -8,7 +8,18 @@ const globalForDb = globalThis as unknown as { pgPool?: Pool };
 
 export const pool =
   globalForDb.pgPool ??
-  new Pool(env.DATABASE_URL ? { connectionString: env.DATABASE_URL } : {});
+  new Pool(
+    env.DATABASE_URL
+      ? {
+          connectionString: env.DATABASE_URL,
+          // Keep serverless instances from multiplying large pools. The
+          // Supabase transaction pooler owns cross-instance concurrency.
+          max: process.env.NODE_ENV === "production" ? 5 : 10,
+          connectionTimeoutMillis: 10_000,
+          idleTimeoutMillis: 30_000,
+        }
+      : {},
+  );
 
 if (process.env.NODE_ENV !== "production") {
   globalForDb.pgPool = pool;

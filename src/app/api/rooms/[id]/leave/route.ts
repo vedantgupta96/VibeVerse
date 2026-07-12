@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function POST(_request: Request, { params }: RouteContext) {
+export async function POST(request: Request, { params }: RouteContext) {
   try {
     const user = await requireUser(await headers());
     const id = roomIdSchema.parse((await params).id);
@@ -16,6 +16,6 @@ export async function POST(_request: Request, { params }: RouteContext) {
     await leaveRoom(user.id, id);
     return new Response(null, { status: 204 });
   } catch (error) {
-    return toErrorResponse(error);
+    return toErrorResponse(error, request);
   }
 }

@@ -1,4 +1,5 @@
 import { z, ZodError } from "zod";
+import { logger } from "@/server/logger";
 
 export type ErrorCode =
   | "UNAUTHORIZED"
@@ -51,8 +52,46 @@ function envelope(
   };
 }
 
-export function toErrorResponse(error: unknown): Response {
+function errorContext(request?: Request) {
+  if (!request) return {};
+  return {
+    route: new URL(request.url).pathname,
+    method: request.method,
+    requestId: request.headers.get("x-request-id") ?? undefined,
+  };
+}
+
+function failureResponse(
+  code: ErrorCode,
+  message: string,
+  status: number,
+  error: unknown,
+  request?: Request,
+): Response {
+  const errorId = crypto.randomUUID();
+  logger.error("api.request_failed", {
+    ...errorContext(request),
+    errorId,
+    code,
+    error,
+  });
+  return Response.json(envelope(code, message, { errorId }), {
+    status,
+    headers: { "x-error-id": errorId },
+  });
+}
+
+export function toErrorResponse(error: unknown, request?: Request): Response {
   if (error instanceof ApiError) {
+    if (error.status >= 500) {
+      return failureResponse(
+        error.code,
+        error.message,
+        error.status,
+        error,
+        request,
+      );
+    }
     return Response.json(envelope(error.code, error.message, error.details), {
       status: error.status,
     });
@@ -65,8 +104,11 @@ export function toErrorResponse(error: unknown): Response {
       { status: 400 },
     );
   }
-  console.error("[api] unexpected error:", error);
-  return Response.json(envelope("INTERNAL", "Something went wrong"), {
-    status: 500,
-  });
+  return failureResponse(
+    "INTERNAL",
+    "Something went wrong",
+    500,
+    error,
+    request,
+  );
 }

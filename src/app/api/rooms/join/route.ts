@@ -15,6 +15,6 @@ export async function POST(request: Request) {
     const room = await joinRoomByCode({ id: user.id, name: user.name }, code);
     return Response.json({ room });
   } catch (error) {
-    return toErrorResponse(error);
+    return toErrorResponse(error, request);
   }
 }

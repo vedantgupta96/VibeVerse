@@ -5,12 +5,12 @@ import { getTasteProfile } from "@/server/services/taste";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const user = await requireUser(await headers());
     const profile = await getTasteProfile(user.id);
     return Response.json({ profile });
   } catch (error) {
-    return toErrorResponse(error);
+    return toErrorResponse(error, request);
   }
 }

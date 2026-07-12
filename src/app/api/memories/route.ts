@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     const memory = await createMemory(user.id, input);
     return Response.json({ memory }, { status: 201 });
   } catch (error) {
-    return toErrorResponse(error);
+    return toErrorResponse(error, request);
   }
 }
 
@@ -35,6 +35,6 @@ export async function GET(request: Request) {
     const result = await listMemories(user.id, { trackId, cursor, limit });
     return Response.json(result);
   } catch (error) {
-    return toErrorResponse(error);
+    return toErrorResponse(error, request);
   }
 }

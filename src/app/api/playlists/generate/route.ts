@@ -14,6 +14,6 @@ export async function POST(request: Request) {
     const playlist = await generatePlaylist(user.id, prompt);
     return Response.json({ playlist }, { status: 201 });
   } catch (error) {
-    return toErrorResponse(error);
+    return toErrorResponse(error, request);
   }
 }

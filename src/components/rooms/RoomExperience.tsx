@@ -132,7 +132,12 @@ export function RoomExperience({ roomId }: { roomId: string }) {
               aria-hidden
             />
             {connected ? "Live" : "Reconnecting…"}
-            <span className="font-mono text-faint">· {room.code}</span>
+            <span
+              className="font-mono text-faint"
+              aria-label={`Room code ${room.code}`}
+            >
+              · {room.code}
+            </span>
           </div>
           <h1 className="mt-2 text-balance font-display text-3xl font-semibold tracking-[-.02em] sm:text-4xl">
             {room.name}

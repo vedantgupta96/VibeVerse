@@ -9,6 +9,7 @@ All VibeVerse API routes, with exact request/response shapes. Every shape below 
 - Content type: `application/json` both ways.
 - Timestamps: ISO 8601 strings in responses.
 - IDs: our UUIDs, never provider IDs, except where explicitly named `providerId`.
+- Correlation: every application/API response includes `x-request-id`. A caller-supplied ID is preserved only when it is 1–128 characters from the conservative `A-Z a-z 0-9 . _ : -` set and starts alphanumeric; otherwise the proxy generates a UUID.
 
 ### Error envelope (all non-2xx responses)
 
@@ -21,6 +22,8 @@ All VibeVerse API routes, with exact request/response shapes. Every shape below 
   }
 }
 ```
+
+Known 4xx errors keep the shape above and are not logged as server failures. For 5xx-class responses (`INTERNAL`, provider/AI unavailability), the server logs a redacted structured record and adds `details.errorId` plus the same value in `x-error-id`. The error ID is safe to share with support; stack traces, raw request bodies, credentials, prompts, and memory text are never returned.
 
 | Code | Status | When |
 |---|---|---|
