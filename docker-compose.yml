@@ -15,5 +15,17 @@ services:
       timeout: 3s
       retries: 10
 
+  # Vibe Rooms realtime fan-out (Phase 10). Optional in dev: the app falls
+  # back to an in-process bus when REDIS_URL is unset (see server/realtime/bus.ts).
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
 volumes:
   pgdata:

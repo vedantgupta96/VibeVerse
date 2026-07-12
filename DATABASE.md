@@ -132,6 +132,68 @@ Unique: `(playlist_id, position)` and `(playlist_id, track_id)`.
 
 Refresh = upsert on `user_id`.
 
+### `rooms` (Phase 10 — Vibe Rooms)
+
+| Column | Type | Constraints |
+|---|---|---|
+| `id` | `uuid` | PK |
+| `code` | `text` | not null — 6-char unambiguous join code (`A-HJ-KM-NP-Z2-9`, via `crypto.randomInt`) |
+| `name` | `text` | not null, CHECK `char_length(name) BETWEEN 1 AND 80` |
+| `owner_id` | `text` | not null, FK → `user.id` ON DELETE CASCADE |
+| `vibe_summary` | `text` | nullable — last AI "read of the room" |
+| `vibe_summary_at` | `timestamptz` | nullable — cooldown anchor (60s) for regenerating the summary |
+| `created_at` | `timestamptz` | not null, default `now()` |
+
+Unique: `code`.
+
+### `room_members`
+
+| Column | Type | Constraints |
+|---|---|---|
+| `id` | `uuid` | PK |
+| `room_id` | `uuid` | not null, FK → `rooms.id` ON DELETE CASCADE |
+| `user_id` | `text` | not null, FK → `user.id` ON DELETE CASCADE |
+| `joined_at` | `timestamptz` | not null, default `now()` |
+| `last_seen_at` | `timestamptz` | not null, default `now()` — presence heartbeat |
+
+Unique: `(room_id, user_id)`. Index: `room_id`. Presence is computed, not stored: a member is "active" when `last_seen_at > now() - interval '60 seconds'`, evaluated in `services/rooms.ts` — this makes the roster survive the no-Redis fallback (client heartbeats every 30s regardless of transport). Leaving a room deletes the row; the owner leaving does not delete the room.
+
+### `room_queue_items`
+
+| Column | Type | Constraints |
+|---|---|---|
+| `id` | `uuid` | PK |
+| `room_id` | `uuid` | not null, FK → `rooms.id` ON DELETE CASCADE |
+| `track_id` | `uuid` | not null, FK → `tracks.id` ON DELETE CASCADE |
+| `added_by_user_id` | `text` | not null, FK → `user.id` ON DELETE CASCADE |
+| `status` | `text` | not null, default `'queued'`, CHECK in (`'queued','playing','played'`) |
+| `created_at` | `timestamptz` | not null, default `now()` |
+
+Index: `room_id`. **Two partial unique indexes** (verified against the generated SQL before migrating — drizzle-kit emitted both correctly):
+
+```sql
+CREATE UNIQUE INDEX room_queue_items_one_playing_key
+  ON room_queue_items (room_id) WHERE status = 'playing';
+CREATE UNIQUE INDEX room_queue_items_active_track_key
+  ON room_queue_items (room_id, track_id) WHERE status <> 'played';
+```
+
+At most one `playing` item per room; at most one active (non-played) instance of a given track per room (played history can repeat). Now-playing is this status flag, not a column on `rooms` — avoids a circular FK and keeps played history free. **No `position` column**: queue order is computed as `voteScore DESC, createdAt ASC, id ASC` (see `sortQueueItems` in `services/room-queue.ts`), where `voteScore` is `SUM(room_queue_votes.value)` for the item.
+
+### `room_queue_votes`
+
+| Column | Type | Constraints |
+|---|---|---|
+| `id` | `uuid` | PK |
+| `queue_item_id` | `uuid` | not null, FK → `room_queue_items.id` ON DELETE CASCADE |
+| `user_id` | `text` | not null, FK → `user.id` ON DELETE CASCADE |
+| `value` | `integer` | not null, CHECK in (`-1, 1`) |
+| `created_at` | `timestamptz` | not null, default `now()` |
+
+Unique: `(queue_item_id, user_id)` — voting is an upsert (`onConflictDoUpdate`), so re-voting changes rather than duplicates a user's vote; idempotent by construction.
+
+**Reactions are deliberately not persisted.** They're an ephemeral Redis (or in-process bus) broadcast only — see `ARCHITECTURE.md` → Realtime. The vocabulary is the canonical 8 moods in `src/lib/moods.ts`, validated with `z.enum(MOODS)`. This keeps the room feed light and avoids modeling data nobody needs to query after the fact.
+
 ## Key Queries (reference implementations)
 
 **Upsert artist + track on save** (one transaction):

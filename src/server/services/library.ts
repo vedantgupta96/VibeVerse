@@ -6,7 +6,7 @@ import { musicProvider } from "@/server/music/deezer";
 import { ApiError } from "@/lib/errors";
 import type { ProviderTrack } from "@/server/music/provider";
 import type { TrackDTO } from "@/lib/dto";
-import { upsertProviderTrack } from "@/server/services/tracks";
+import { rowToTrackDTO, upsertProviderTrack } from "@/server/services/tracks";
 
 const LIBRARY_PAGE_SIZE = 30;
 
@@ -73,40 +73,6 @@ export async function unsaveTrack(
     .where(and(eq(savedTracks.userId, userId), eq(savedTracks.trackId, trackId)))
     .returning({ id: savedTracks.id });
   return deleted.length > 0;
-}
-
-function rowToTrackDTO(row: {
-  trackId: string;
-  provider: string;
-  providerId: string;
-  title: string;
-  durationMs: number;
-  previewUrl: string | null;
-  albumName: string | null;
-  albumImageUrl: string | null;
-  artistId: string;
-  artistProviderId: string;
-  artistName: string;
-  artistImageUrl: string | null;
-  saved: boolean;
-}): TrackDTO {
-  return {
-    id: row.trackId,
-    provider: "deezer",
-    providerId: row.providerId,
-    title: row.title,
-    durationMs: row.durationMs,
-    previewUrl: row.previewUrl,
-    albumName: row.albumName,
-    albumImageUrl: row.albumImageUrl,
-    artist: {
-      id: row.artistId,
-      providerId: row.artistProviderId,
-      name: row.artistName,
-      imageUrl: row.artistImageUrl,
-    },
-    saved: row.saved,
-  };
 }
 
 export async function listLibrary(

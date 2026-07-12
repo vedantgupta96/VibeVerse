@@ -24,6 +24,13 @@ export const envSchema = z.object({
 
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
+
+  // Vibe Rooms realtime fan-out (Phase 10). Optional: unset → in-process bus
+  // (single instance only). See server/realtime/bus.ts for the fallback.
+  REDIS_URL: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z.string().min(1).optional(),
+  ),
 });
 
 export type Env = z.infer<typeof envSchema>;

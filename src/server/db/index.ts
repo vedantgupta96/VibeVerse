@@ -16,3 +16,25 @@ if (process.env.NODE_ENV !== "production") {
 
 export const db = drizzle(pool, { schema });
 export { schema };
+
+/**
+ * True when `error` is a Postgres unique-violation (23505) on the named
+ * constraint. Used to turn a race-condition insert failure into a clean
+ * retry (room code collisions) or a friendly VALIDATION_ERROR (duplicate
+ * active queue track) instead of leaking a raw DB error.
+ *
+ * drizzle-orm wraps the underlying `pg` error in a `DrizzleQueryError`, whose
+ * `.code`/`.constraint` live on `.cause` rather than the error itself — check
+ * both so this works whether the caller sees the raw pg error or Drizzle's wrapper.
+ */
+export function isUniqueViolation(error: unknown, constraint: string): boolean {
+  const matches = (candidate: unknown): boolean =>
+    typeof candidate === "object" &&
+    candidate !== null &&
+    (candidate as { code?: string }).code === "23505" &&
+    (candidate as { constraint?: string }).constraint === constraint;
+
+  if (matches(error)) return true;
+  if (error instanceof Error && matches(error.cause)) return true;
+  return false;
+}

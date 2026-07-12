@@ -19,6 +19,7 @@ How VibeVerse is built. This document makes the stack decisions concrete so impl
 | Embeddings | **Voyage AI — `voyage-4-lite`, 1024 dims** via REST | Anthropic-recommended embedding provider; lite tier is cheap and good enough for memory recall |
 | Galaxy v1 | **d3-force + HTML canvas** | 2D first per the brief; R3F deferred |
 | Validation | **Zod v3** shared schemas (one schema validates the API input AND types the client call) | Single source of truth between client and server |
+| Realtime transport | **Server-Sent Events** (route handler) + **Redis pub/sub** (`ioredis`), in-process fallback when `REDIS_URL` is unset | Vercel can't host WebSocket servers in Next.js route handlers; SSE is a plain HTTP response a route handler can stream. Redis fans events out across instances; docker-compose Redis locally, Upstash-compatible in prod. `ioredis` added in Phase 10 — see Realtime section below |
 
 ## Repository Layout
 
@@ -41,7 +42,9 @@ vibeverse/
 │   │   │   ├── dj/page.tsx
 │   │   │   ├── playlist/[id]/page.tsx
 │   │   │   ├── taste/page.tsx
-│   │   │   └── galaxy/page.tsx
+│   │   │   ├── galaxy/page.tsx
+│   │   │   ├── rooms/page.tsx
+│   │   │   └── rooms/[id]/page.tsx
 │   │   └── api/
 │   │       ├── auth/[...all]/route.ts    # Better Auth handler
 │   │       ├── search/route.ts
@@ -56,13 +59,18 @@ vibeverse/
 │   │       ├── playlists/generate/route.ts
 │   │       ├── taste-profile/route.ts
 │   │       ├── taste-profile/refresh/route.ts
-│   │       └── galaxy/route.ts
+│   │       ├── galaxy/route.ts
+│   │       └── rooms/                    # 15 routes: create/list/join, [id] snapshot,
+│   │                                      # [id]/join|leave|heartbeat|events (SSE),
+│   │                                      # [id]/queue(+[itemId]+vote), [id]/advance,
+│   │                                      # [id]/reactions, [id]/vibe
 │   ├── components/
 │   │   ├── ui/                           # shadcn primitives (generated)
 │   │   ├── tracks/                       # TrackCard, TrackList, SaveButton, PreviewButton
 │   │   ├── memories/                     # MemoryCard, MemoryEditor, MoodPicker
 │   │   ├── playlists/                    # PlaylistCard, GenerationProgress
 │   │   ├── galaxy/                       # GalaxyCanvas, NodePanel
+│   │   ├── rooms/                        # RoomExperience, NowPlayingCard, QueuePanel, ...
 │   │   └── layout/                       # AppShell, Sidebar, SearchBar
 │   ├── server/                           # server-only code (import "server-only")
 │   │   ├── db/
@@ -76,20 +84,25 @@ vibeverse/
 │   │   │   ├── client.ts                 # Anthropic client singleton
 │   │   │   ├── playlist.ts               # generatePlaylistConcept()
 │   │   │   ├── taste.ts                  # generateTasteSummary()
+│   │   │   ├── roomVibe.ts               # generateRoomVibeSummary() — "read the room"
 │   │   │   └── embeddings.ts             # embed(texts) → Voyage AI
+│   │   ├── realtime/                     # bus.ts (Redis/in-process), sse.ts, rate-limit.ts
 │   │   └── services/                     # business logic, called by route handlers
 │   │       ├── library.ts                # save/unsave/upsert track+artist
 │   │       ├── memories.ts               # CRUD + embedding + semantic search
 │   │       ├── playlists.ts              # generation orchestration + persistence
 │   │       ├── taste.ts                  # aggregation + profile persistence
-│   │       └── galaxy.ts                 # node/edge graph building
+│   │       ├── galaxy.ts                 # node/edge graph building
+│   │       ├── rooms.ts                  # room CRUD, presence, reactions, AI vibe
+│   │       └── room-queue.ts             # queue add/remove/vote/advance
 │   ├── lib/
 │   │   ├── api-client.ts                 # typed fetch wrapper for client components
+│   │   ├── realtime.ts                   # client-safe RoomEvent union (SSE payload shapes)
 │   │   ├── schemas/                      # Zod schemas shared by client + server
-│   │   │   ├── search.ts, memory.ts, playlist.ts, taste.ts, galaxy.ts
+│   │   │   ├── search.ts, memory.ts, playlist.ts, taste.ts, galaxy.ts, room.ts
 │   │   ├── errors.ts                     # ApiError class + error envelope helpers
 │   │   └── utils.ts
-│   ├── hooks/                            # useSearch, useLibrary, useMemories, ...
+│   ├── hooks/                            # useSearch, useLibrary, useMemories, useRooms, useRoom, ...
 │   ├── stores/                           # zustand: usePlayerStore, useGalaxyStore
 │   └── middleware.ts                     # auth gate for /(app) routes
 └── .env.example
@@ -185,6 +198,10 @@ Runs on **`models.default`**. Input: SQL-aggregated stats (genre counts, artist 
 
 Voyage AI REST: `POST https://api.voyageai.com/v1/embeddings` with `{ model: "voyage-4-lite", input: string[], input_type: "document" | "query", output_dimension: 1024 }`. Use `input_type: "document"` when embedding stored memories, `input_type: "query"` when embedding a semantic-search query. Always pass `output_dimension: 1024` explicitly so vectors match the `vector(1024)` schema regardless of the model's native default. Wrap in `embedDocuments(texts)` / `embedQuery(text)`; on failure throw `EmbeddingUnavailableError` which memory-save catches and logs (memory still saves with null embedding).
 
+### Room vibe (`server/ai/roomVibe.ts`)
+
+Runs on **`models.fast`** (Haiku 4.5) — a "read the room" blurb is a quick glance, not a considered essay, so it doesn't need the default tier's depth. Clones taste.ts's structured-output + cooldown-friendly shape (`{ summary: string }`, 40–500 chars) but sends **no `thinking` and no `output_config.effort`**: Haiku 4.5 doesn't support adaptive thinking (existing rule above) *and*, confirmed against the live API, rejects the `effort` parameter outright (400 "This model does not support the effort parameter") — both knobs are Sonnet/Opus-only. Context = room name, active member count, now-playing track, top 10 queued tracks (all SQL-computed, never invented by the model). Cooldown: 60s, anchored on `rooms.vibe_summary_at`.
+
 ## Auth
 
 - Better Auth instance in `server/auth.ts` with the Drizzle adapter; tables generated by `npx @better-auth/cli generate` into `schema.ts`.
@@ -192,6 +209,21 @@ Voyage AI REST: `POST https://api.voyageai.com/v1/embeddings` with `{ model: "vo
 - `middleware.ts` redirects unauthenticated requests on `/(app)` routes to `/login` (cookie presence check); real session validation happens in route handlers/services via `auth.api.getSession({ headers })`.
 - Helper `requireUser(headers): Promise<User>` in `server/auth.ts` throws `ApiError("UNAUTHORIZED", 401)` — first line of every protected service call path.
 - Google OAuth enabled only when `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` are set; UI hides the button otherwise.
+
+## Realtime (Vibe Rooms, Phase 10)
+
+**Transport: SSE, not WebSockets.** `PRODUCT_SPEC.md`/`AGENTS.md` originally planned "Redis + WebSockets," but Vercel's serverless route handlers can't host a WebSocket server — there's no persistent process to accept the upgrade. A route handler *can* return a streamed `text/event-stream` response, so Vibe Rooms uses **Server-Sent Events** for server→client push, plain REST mutations for client→server writes (queue/vote/advance/react/vibe), and **Redis pub/sub** to fan events out across serverless instances.
+
+- **`src/lib/realtime.ts`** — the `RoomEvent` union (`member_joined`, `member_left`, `queue_updated`, `vote_updated`, `now_playing`, `reaction`, `vibe_summary`), imported by both the server bus and client hooks. **Thin-event principle**: every event except `reaction` is an invalidation hint, not new state — the client refetches `GET /api/rooms/[id]` on receipt. This means duplicate or out-of-order events are harmless (the snapshot always wins), and there's exactly one serializer for room state (the snapshot query), not one per event type.
+- **`src/server/realtime/bus.ts`** — `publishRoomEvent(roomId, event)` / `subscribeToRoom(roomId, handler)`, channel `room:{id}`.
+  - **No `REDIS_URL`** → an in-process `Map<channel, Set<handler>>` *is* the whole bus. Full realtime works within a single Node process (the common dev/demo case).
+  - **`REDIS_URL` set** → two `ioredis` clients (pub + a dedicated sub — a subscriber connection can't issue other Redis commands), both cached on `globalThis` (same pattern as the `pgPool` singleton in `server/db/index.ts`) so Next.js dev-server HMR reuses them instead of orphaning subscriptions on every reload. The Redis subscriber's `message` handler re-publishes into the same in-process Map, so route handlers only ever register against one local API regardless of backend.
+  - Publish failures are caught and logged, never thrown: a queue/vote mutation must still succeed (and return 2xx) even if fan-out hiccups — realtime is a UX enhancement, not a correctness dependency (the DB write already happened).
+- **Degradation ladder**: Redis pub/sub (multi-instance) → in-process bus (single instance, e.g. one Vercel invocation or local dev) → 15s `refetchInterval` on the room snapshot query while SSE is disconnected. The fallback is a deliberate, commented deviation from the app's default no-polling `QueryClient` config (`app/providers.tsx`): a room still converges if the stream is blocked entirely (corporate proxy, browser extension, Vercel duration limit). While SSE is healthy, snapshots refresh only once per 60s presence window because heartbeats are deliberately not broadcast; this lets closed tabs become stale in the roster within the promised 90s without redundant 15s polling.
+- **SSE route** (`app/api/rooms/[id]/events/route.ts`): `requireUser` + membership check happen *before* the stream opens, so auth/membership failures are ordinary JSON error responses, never a broken stream. Once open: `retry: 3000` field, `: connected` comment, `subscribeToRoom` → `enqueue`, `: ping` comment every 25s, cleanup on `request.signal` abort (guarded against double-close since both the abort listener and the stream's `cancel()` can fire). Headers: `text/event-stream`, `Cache-Control: no-cache, no-transform`, `X-Accel-Buffering: no`. `export const maxDuration = 300` — Vercel's duration limit would otherwise close a long-lived stream, but `EventSource` auto-reconnects and the client refetches the snapshot on every `open`, so a forced close just looks like a brief reconnect blip.
+- **No Last-Event-ID replay.** The server is stateless per connection by design — the client always refetches the room snapshot on `EventSource` `open` (initial connect and every reconnect), so there's nothing to replay and no per-connection state to manage server-side.
+- **Presence** doesn't depend on the bus at all: `room_members.last_seen_at` is bumped by a 30s client heartbeat and a room's "active" members are computed as `last_seen_at > now() - 60s` in `services/rooms.ts`. This means presence is correct even in the no-Redis, no-SSE, poll-only degradation case.
+- **`ioredis`** is the one new dependency this phase adds (auto-reconnect, a clean pub/sub API, and the client Upstash's docs recommend for their Redis-compatible endpoint — Upstash is the natural managed-Redis choice for a Vercel deployment). It's in maintenance mode upstream, which is an acceptable risk here: the bus abstraction confines any future client swap to `server/realtime/bus.ts` alone.
 
 ## Error Handling
 
@@ -223,6 +255,7 @@ VOYAGE_API_KEY=
 VOYAGE_MODEL=voyage-4-lite
 GOOGLE_CLIENT_ID=               # optional
 GOOGLE_CLIENT_SECRET=           # optional
+REDIS_URL=                      # optional; unset → in-process realtime bus (Phase 10)
 ```
 
 Validate at boot with a Zod `env.ts` (fail fast on missing required vars; AI keys required only when AI routes are hit, so the app shell runs without them).
@@ -240,6 +273,9 @@ services:
       POSTGRES_DB: vibeverse
     ports: ["5432:5432"]
     volumes: [pgdata:/var/lib/postgresql/data]
+  redis:                       # Phase 10 — Vibe Rooms realtime fan-out
+    image: redis:7-alpine      # optional locally: unset REDIS_URL falls back to the in-process bus
+    ports: ["6379:6379"]
 volumes:
   pgdata:
 ```
@@ -254,6 +290,7 @@ Workflow: `docker compose up -d` → `npm run db:migrate` (drizzle-kit) → `npm
 
 ## Deferred Architecture (do not build yet)
 
-- **Redis + WebSockets** for Vibe Rooms (Phase 10): planned as a separate realtime concern; nothing in the MVP schema should block it.
 - **React Three Fiber** galaxy: `GET /api/galaxy` response shape is renderer-agnostic so the 3D upgrade is a frontend-only change.
 - **Spotify provider**: implement `MusicProvider` with client-credentials flow; add a `provider` discriminator already present in the schema.
+- **Conversational AI DJ + voice**: the `models.strong` tier is still reserved and unused; Vibe Rooms' "read the room" blurb (Phase 10) uses `models.fast` for a different job (a quick summary, not a conversation) and doesn't touch this reservation.
+- Vibe Rooms follow-ups (Phase 10 shipped the core; explicitly not in this phase): reaction-aware AI vibe context, Last-Event-ID replay, private rooms/room deletion, free-form emoji reactions, host-synced playback, vote-to-skip.

@@ -101,6 +101,22 @@ Scale (rem): `display-xl 3.5 / display 2.25 / h2 1.5 / h3 1.25 / body 1 / small 
 | `GalaxyCanvas` | Full-bleed canvas, pan/zoom, hover labels; genre nodes = soft glow rings, artists = circles w/ art, weight → radius |
 | `EmptyState` | Per-page illustration-free: faint constellation line art + one-liner + CTA |
 
+### Vibe Rooms (Phase 10)
+
+| Component | Notes |
+|---|---|
+| `RoomList` | Glass rows on `/rooms`, name + mono join code + live-dot active count; infinite scroll |
+| `CreateRoomForm` / `JoinByCodeForm` | Existing `ui/` `Input`/`Button` primitives only — no new dialog component; code input is mono, uppercased as typed |
+| `RoomExperience` | Orchestrator: joins on mount, then owns the snapshot/SSE/presence lifecycle and the ephemeral reaction list; renders the room's one hero moment (`NowPlayingCard`) plus quieter supporting panels |
+| `NowPlayingCard` | The room's hero moment — large art, title in Clash Display, reuses `PreviewButton`/player store (`PlayerTrack.id = providerId`); disabled/muted state when `previewUrl` is null; owner-only "Next track" |
+| `QueuePanel` | `AddTrackInput` typeahead (reuses `useSearch`) above an up/down vote list; vote buttons color on press (aurora-cyan up, aurora-magenta down), remove (×) shown only to the adder or owner |
+| `ReactionBar` | 8 mood chips using `MOOD_BG`/`MOOD_LABEL` (same literal-class convention as `MoodPicker`) |
+| `ReactionOverlay` | Framer Motion floats rising from the bottom of the room view; opacity-only fade when `prefers-reduced-motion` |
+| `PresenceRoster` | Live-dot per member (green = active within 60s, faint = stale) |
+| `VibeSummaryCard` | AI "read the room" blurb card with its own refresh action; cooldown and AI-unavailable states read like the taste/playlist error copy, not raw error codes |
+
+Live-dot convention (roster, room-list activity, connection state): `bg-success` filled 6–8px dot for "live/active," `bg-faint` for "stale/reconnecting" — never the only signal, always paired with a label.
+
 ## Voice & Copy
 
 Short, warm, a little cosmic. The AI DJ speaks first-person and confident ("Here's your frost-bitten focus set."). Buttons are verbs: "Generate", "Save", "Remember this". Empty states invite, never scold.

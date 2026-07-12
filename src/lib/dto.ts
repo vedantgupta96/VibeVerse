@@ -128,3 +128,47 @@ export type GalaxyResponse = {
   edges: GalaxyEdgeDTO[];
   tracks: TrackDTO[];
 };
+
+// Vibe Rooms (Phase 10). See API_CONTRACTS.md → Vibe Rooms.
+
+export type RoomSummaryDTO = {
+  id: string;
+  code: string;
+  name: string;
+  ownerId: string;
+  memberCount: number;
+  activeCount: number;
+  createdAt: string;
+};
+
+export type RoomMemberDTO = {
+  userId: string;
+  name: string;
+  joinedAt: string;
+  lastSeenAt: string;
+  active: boolean; // computed: lastSeenAt within the last 60s
+};
+
+export type RoomQueueItemDTO = {
+  id: string;
+  status: "queued" | "playing" | "played";
+  addedByUserId: string;
+  createdAt: string;
+  track: TrackDTO;
+  voteScore: number;
+  myVote: 1 | -1 | null;
+};
+
+export type RoomSnapshotDTO = {
+  id: string;
+  code: string;
+  name: string;
+  ownerId: string;
+  isOwner: boolean;
+  createdAt: string;
+  members: RoomMemberDTO[];
+  nowPlaying: RoomQueueItemDTO | null;
+  queue: RoomQueueItemDTO[];
+  vibeSummary: string | null;
+  vibeSummaryAt: string | null;
+};
