@@ -59,7 +59,12 @@ export async function generatePlaylistConcept(
           content: `<listener_data>${JSON.stringify({ prompt, ...context })}</listener_data>`,
         },
       ],
-      output_config: { format: zodOutputFormat(PlaylistConceptSchema) },
+      // "medium" keeps concept quality while cutting adaptive-thinking latency
+      // (~105s at the "high" default vs the <30s acceptance target).
+      output_config: {
+        format: zodOutputFormat(PlaylistConceptSchema),
+        effort: "medium",
+      },
     });
 
   } catch {
