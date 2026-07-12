@@ -129,7 +129,7 @@ Docs to read before any phase: `PRODUCT_SPEC.md` (what), `ARCHITECTURE.md` (how)
 - [x] axe gates for login, signup, authenticated home, rooms list, and joined room on desktop plus login/home/room at 390px.
 - [x] GitHub Actions gate with pgvector PostgreSQL + Redis services, migrations, lint, typecheck, DB-backed Vitest, build, and Playwright Chromium.
 - [x] Ethical beta measurement and five-session moderated research plans; no behavioral tracking implementation.
-- [ ] Acceptance verification: lint, typecheck, existing DB-backed tests, production build, local Playwright/axe with `REDIS_URL` unset, and CI workflow syntax all pass.
+- [x] Acceptance verification: lint, typecheck, all 98 DB-backed tests, production build, and all four Playwright/axe tests with `REDIS_URL` unset pass in GitHub Actions. The browser gate runs against the production Next.js build (`next start`) to match the deployed artifact; workflow syntax and `git diff --check` also pass. ✓ verified on 2026-07-12 in PR #15 after the original development-server run exposed preload instability.
 
 **Accept:** code/runbook readiness for Supabase + Vercel without claiming external deployment; correlated/redacted 5xx diagnostics; no unresolved critical/serious automated axe findings on gated states; stable two-user browser flow; manual VoiceOver/zoom/disabled-user checks and account-bound deployment remain explicitly open.
 
