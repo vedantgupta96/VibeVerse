@@ -66,7 +66,7 @@ Docs to read before any phase: `PRODUCT_SPEC.md` (what), `ARCHITECTURE.md` (how)
 - [x] `MoodPicker` + `MemoryEditor` + `MemoryCard` (inline edit/delete); `TrackMemories` on track detail; `/journal` feed with semantic search box (shared mood module in `lib/moods`)
 - [x] Vitest: ownership enforcement + embedding-failure-still-saves (DB integration, embeddings mocked; 19 tests total)
 
-**Accept:** write a memory on a track; find it on `/journal`; semantic query ("college days") surfaces it without keyword overlap (with real key) or degrades gracefully (without). ✓ verified — CRUD + journal feed work; without a key, create saves with null embedding and search returns a handled 502 `AI_UNAVAILABLE` (UI shows "memories still save" message).
+**Accept:** write a memory on a track; find it on `/journal`; semantic query ("college days") surfaces it without keyword overlap (with real key) or degrades gracefully (without). ✓ verified — CRUD + journal feed work; without a key, create saves with null embedding and search returns a handled 502 `AI_UNAVAILABLE` (UI shows "memories still save" message). ✓ live semantic search verified with a real Voyage key: "back in university" (zero keyword overlap) ranks the college-dorm memory first at 0.44 similarity, ~2× the next hit. Note: keyless Voyage accounts are capped at 3 requests/min — add a payment method at dashboard.voyageai.com before demoing rapid memory writes.
 
 ## Phase 7 — AI Playlist Generator
 
@@ -76,7 +76,7 @@ Docs to read before any phase: `PRODUCT_SPEC.md` (what), `ARCHITECTURE.md` (how)
 - [x] Routes: generate / list / detail / delete
 - [x] `/dj` page: prompt input, `GenerationProgress`, history; `/playlist/[id]` with per-track reasons + save buttons
 
-**Accept:** "late-night coding in Chicago during winter" → titled playlist with ≥ 10 real, previewable tracks and one-line reasons in < 30 s. Automated verification passes; live acceptance remains pending a reachable PostgreSQL database plus Anthropic/Voyage credentials.
+**Accept:** "late-night coding in Chicago during winter" → titled playlist with ≥ 10 real, previewable tracks and one-line reasons in < 30 s. ✓ verified live (2026-07-11): that exact prompt produced "Chicago Freeze: Late-Night Code Sessions" — 14 real tracks, 14/14 previewable, taste-aware reasons. First run took 105 s at Sonnet 4.6's default `effort: "high"`; `output_config.effort: "medium"` in `server/ai/playlist.ts` brings it to **22 s** with no visible quality loss.
 
 ## Phase 8 — Taste Dashboard
 
@@ -85,7 +85,7 @@ Docs to read before any phase: `PRODUCT_SPEC.md` (what), `ARCHITECTURE.md` (how)
 - [x] Routes: get / refresh
 - [x] `/taste` page: `TasteDnaOrb`, summary, genre bars, artist row, mood distribution; empty state under threshold
 
-**Accept:** with ≥ 5 saved tracks, refresh produces a coherent profile; counts match the library; cooldown returns 429. Automated verification passes; live acceptance remains pending a reachable PostgreSQL database and Anthropic credentials.
+**Accept:** with ≥ 5 saved tracks, refresh produces a coherent profile; counts match the library; cooldown returns 429. ✓ verified live (2026-07-11): 10-track library → "The Eclectic Archivist" with traits referencing both genres and memories; genre counts reconcile with the library; immediate second refresh → 429. Refresh tuned from 46 s to **17 s** via `effort: "medium"` in `server/ai/taste.ts`.
 
 ## Phase 9 — Music Galaxy (2D)
 
@@ -94,9 +94,9 @@ Docs to read before any phase: `PRODUCT_SPEC.md` (what), `ARCHITECTURE.md` (how)
 - [x] Empty state; reduced-motion fallback (static layout)
 - [x] Vitest: graph builder (weights, shared-genre edges)
 
-**Accept:** 20+ saved tracks across ≥ 3 genres renders clustered constellations at 60 fps; clicking an artist shows their tracks. ✓ verified live against local Postgres + Deezer: 11 saved tracks across 6 genres produce correct genre/artist nodes, weights, and shared-genre cluster edges; empty graph, 401/405, cross-user isolation, and the inspector's lazy memory load all behave; `/galaxy` renders behind auth (307 → login without a session). 60 fps canvas feel still needs a quick manual browser pass.
+**Accept:** 20+ saved tracks across ≥ 3 genres renders clustered constellations at 60 fps; clicking an artist shows their tracks. ✓ verified live against local Postgres + Deezer: 11 saved tracks across 6 genres produce correct genre/artist nodes, weights, and shared-genre cluster edges; empty graph, 401/405, cross-user isolation, and the inspector's lazy memory load all behave; `/galaxy` renders behind auth (307 → login without a session). ✓ canvas render and interactions confirmed in a real browser (2026-07-11).
 
-**MVP demo script (final check):** sign up → search & save 10 tracks → add 3 memories → generate a playlist → refresh Taste DNA → open the galaxy. Zero console errors, all data persisted across reload.
+**MVP demo script (final check):** sign up → search & save 10 tracks → add 3 memories → generate a playlist → refresh Taste DNA → open the galaxy. Zero console errors, all data persisted across reload. ✓ verified live end-to-end (2026-07-11) with real Postgres, Deezer, Anthropic, and Voyage: every step passed through the real HTTP surface; galaxy interactions confirmed in-browser. **The MVP is complete.**
 
 ---
 

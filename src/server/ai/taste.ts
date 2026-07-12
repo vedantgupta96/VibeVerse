@@ -52,7 +52,12 @@ export async function generateTasteSummary(
           content: `<listener_data>${JSON.stringify(context)}</listener_data>`,
         },
       ],
-      output_config: { format: zodOutputFormat(TasteSummarySchema) },
+      // "medium" matches playlist.ts: short summary generation doesn't need
+      // the "high"-effort default's thinking latency (~46s → well under 30s).
+      output_config: {
+        format: zodOutputFormat(TasteSummarySchema),
+        effort: "medium",
+      },
     });
 
     if (message.stop_reason === "refusal") {
