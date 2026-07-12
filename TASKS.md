@@ -98,15 +98,37 @@ Docs to read before any phase: `PRODUCT_SPEC.md` (what), `ARCHITECTURE.md` (how)
 
 **MVP demo script (final check):** sign up → search & save 10 tracks → add 3 memories → generate a playlist → refresh Taste DNA → open the galaxy. Zero console errors, all data persisted across reload. ✓ verified live end-to-end (2026-07-11) with real Postgres, Deezer, Anthropic, and Voyage: every step passed through the real HTTP surface; galaxy interactions confirmed in-browser. **The MVP is complete.**
 
+## Phase 10 — Realtime Vibe Rooms
+
+- [x] Infra: `docker-compose.yml` `redis:7-alpine` service; `REDIS_URL` in `lib/env.ts` + `.env.example` (optional); `ioredis` — the one new dependency this phase adds
+- [x] DB schema: `rooms`, `room_members`, `room_queue_items` (two partial unique indexes — one `playing` per room, one active track per room, verified against the generated SQL), `room_queue_votes`; migration `0001_luxuriant_human_robot`; `DATABASE.md` updated (reactions deliberately not persisted)
+- [x] Realtime core: `lib/realtime.ts` (`RoomEvent` union), `server/realtime/bus.ts` (Redis pub/sub + in-process fallback, `globalThis`-cached like the `pgPool` singleton), `server/realtime/sse.ts` (framing helpers), `server/realtime/rate-limit.ts` (sliding window); unit tests for all four
+- [x] Services: `services/rooms.ts` (create/list/join-by-code/join/leave/heartbeat/snapshot/react/generate-vibe) and `services/room-queue.ts` (add/remove/vote/clear-vote/advance, `sortQueueItems` pure comparator); DTOs in `lib/dto.ts`; Zod schemas in `lib/schemas/room.ts`; unit tests (pure functions, schemas) + DB-integration tests (provider mocked at the module boundary)
+- [x] 15 API routes under `/api/rooms` (14 REST + 1 SSE), house style throughout
+- [x] AI vibe: `server/ai/roomVibe.ts` — "read the room" blurb on `models.fast`, structured output, 60s cooldown; no `thinking` and no `output_config.effort` (Haiku 4.5 rejects the `effort` parameter outright, confirmed against the live API)
+- [x] SSE route `app/api/rooms/[id]/events/route.ts`: pre-stream 404/403, `retry:`/`: connected`/`: ping` framing, cleanup on abort, no Last-Event-ID replay
+- [x] Client: `useRooms`/`useRoom` hooks (snapshot polling + SSE + presence heartbeat + mutations); `RoomList`, `CreateRoomForm`, `JoinByCodeForm`, `RoomExperience`, `NowPlayingCard`, `QueuePanel` (+ `AddTrackInput` typeahead), `ReactionBar`, `ReactionOverlay`, `PresenceRoster`, `VibeSummaryCard`; `/rooms` + `/rooms/[id]` pages; Sidebar nav entry (`Users` icon); `middleware.ts` matcher extended
+- [x] Docs: `DATABASE.md`, `API_CONTRACTS.md`, `ARCHITECTURE.md`, `DESIGN_SYSTEM.md` updated in this change
+
+**Accept:**
+
+- [x] Two browsers, two accounts, one room (created in A, joined by code in B): B in A's roster ≤5s; B inactive ≤90s after closing tab.
+- [x] A queues a track via in-room search: appears in B ≤2s without refresh; B's upvote reorders A's queue ≤2s.
+- [x] Owner "Next track": now-playing updates both browsers ≤2s; preview plays locally per user.
+- [x] Reactions float across browsers ≤2s; 6th within 5s → 429 with a gentle UI notice.
+- [x] "Read the room" blurb visible in both browsers ≤10s; retry inside 60s shows cooldown; without `ANTHROPIC_API_KEY` the card degrades, nothing else breaks.
+- [x] All of the above with `REDIS_URL` unset (in-process bus); with SSE blocked, the room still converges via the 15s poll.
+- [x] `curl -N` shows heartbeats/frames; 403 non-member, 401 no session. Fresh-DB migration clean; lint/typecheck/tests green; all five docs updated in-PR. ✓ verified via curl end-to-end with both `REDIS_URL` set and unset (restarting between): sign-up → create room → join by code → Deezer search → queue → vote → advance → react (429 past the 5th) → AI vibe (429 within cooldown) → `curl -N` events showing `retry:`, `: connected`, `: ping`, and `data:` frames for every event type; Redis mode additionally confirmed via `redis-cli monitor`/`pubsub channels` (subscribe → publish → clean unsubscribe on disconnect). ✓ two isolated Chrome contexts verified the visual/timing criteria on 2026-07-12, including local-only preview state, stale presence after tab close, in-process realtime with `REDIS_URL` unset, and a blocked-SSE vote appearing through the fallback poll in 15.1s.
+
 ---
 
-## Phase 10+ — Deferred (do not start)
+## Deferred (post-MVP)
 
-- Vibe Rooms (Redis, WebSockets, queues/voting/reactions)
 - 3D galaxy (React Three Fiber)
 - Conversational AI DJ chat & voice
 - Spotify provider + OAuth playback
 - Social features
+- Vibe Rooms follow-ups: reaction-aware AI vibe context, Last-Event-ID replay, private rooms/room deletion, free-form emoji reactions, host-synced playback, vote-to-skip
 
 ## Working Agreements
 

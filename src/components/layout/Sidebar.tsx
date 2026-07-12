@@ -10,6 +10,7 @@ import {
   Radio,
   Search,
   Sparkles,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +22,9 @@ const NAV = [
   { href: "/dj", label: "AI DJ", icon: Radio },
   { href: "/taste", label: "Taste DNA", icon: Sparkles },
   { href: "/galaxy", label: "Galaxy", icon: Orbit },
+  // "Radio" is already used by AI DJ, so Vibe Rooms gets "Users" (the room's
+  // defining feature is who's listening together).
+  { href: "/rooms", label: "Vibe Rooms", icon: Users },
 ] as const;
 
 export function Sidebar() {

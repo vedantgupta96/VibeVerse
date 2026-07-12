@@ -7,6 +7,49 @@ import type { TrackDTO } from "@/lib/dto";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
+export type TrackRow = {
+  trackId: string;
+  provider: string;
+  providerId: string;
+  title: string;
+  durationMs: number;
+  previewUrl: string | null;
+  albumName: string | null;
+  albumImageUrl: string | null;
+  artistId: string;
+  artistProviderId: string;
+  artistName: string;
+  artistImageUrl: string | null;
+  saved: boolean;
+};
+
+/**
+ * The one row -> TrackDTO mapper for the "tracks + artists (+ per-user saved
+ * flag)" join shape, shared by library.ts (listLibrary/getTrackById) and
+ * room-queue.ts (mapQueueRow) so there's a single place that knows this
+ * shape. galaxy.ts and memories.ts build their own TrackDTO-shaped objects
+ * inline rather than through this helper — left as-is (out of scope here).
+ */
+export function rowToTrackDTO(row: TrackRow): TrackDTO {
+  return {
+    id: row.trackId,
+    provider: "deezer",
+    providerId: row.providerId,
+    title: row.title,
+    durationMs: row.durationMs,
+    previewUrl: row.previewUrl,
+    albumName: row.albumName,
+    albumImageUrl: row.albumImageUrl,
+    artist: {
+      id: row.artistId,
+      providerId: row.artistProviderId,
+      name: row.artistName,
+      imageUrl: row.artistImageUrl,
+    },
+    saved: row.saved,
+  };
+}
+
 /** Upsert canonical provider metadata without adding the track to a library. */
 export async function upsertProviderTrack(
   tx: DbTransaction,

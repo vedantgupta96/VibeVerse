@@ -230,6 +230,122 @@ type ArtistCount = {
 };
 type MoodCount = { mood: Mood; count: number };
 
+/* -------------------------------------------------------------------------- */
+/* Vibe Rooms (Phase 10)                                                      */
+/*                                                                            */
+/* Reactions are deliberately NOT a table — they're an ephemeral Redis-only   */
+/* broadcast (see server/realtime/bus.ts). Now-playing is a status flag on    */
+/* the queue item, not a column on rooms, so there's no circular FK and       */
+/* played history is free. Queue order has no position column: it's computed */
+/* (voteScore DESC, createdAt ASC, id ASC) — see services/room-queue.ts.      */
+/* -------------------------------------------------------------------------- */
+
+export const rooms = pgTable(
+  "rooms",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    code: text("code").notNull(),
+    name: text("name").notNull(),
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    vibeSummary: text("vibe_summary"),
+    vibeSummaryAt: timestamp("vibe_summary_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("rooms_code_key").on(t.code),
+    check(
+      "rooms_name_len_check",
+      sql`char_length(${t.name}) between 1 and 80`,
+    ),
+  ],
+);
+
+export const roomMembers = pgTable(
+  "room_members",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    roomId: uuid("room_id")
+      .notNull()
+      .references(() => rooms.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    joinedAt: timestamp("joined_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    // Presence heartbeat: "active" = lastSeenAt within the last 60s, computed
+    // in services/rooms.ts (survives the no-Redis fallback — see ARCHITECTURE.md).
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("room_members_room_user_key").on(t.roomId, t.userId),
+    index("room_members_room_idx").on(t.roomId),
+  ],
+);
+
+export const roomQueueItems = pgTable(
+  "room_queue_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    roomId: uuid("room_id")
+      .notNull()
+      .references(() => rooms.id, { onDelete: "cascade" }),
+    trackId: uuid("track_id")
+      .notNull()
+      .references(() => tracks.id, { onDelete: "cascade" }),
+    addedByUserId: text("added_by_user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    status: text("status").notNull().default("queued"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("room_queue_items_room_idx").on(t.roomId),
+    check(
+      "room_queue_items_status_check",
+      sql`${t.status} in ('queued','playing','played')`,
+    ),
+    // At most one "playing" item per room.
+    uniqueIndex("room_queue_items_one_playing_key")
+      .on(t.roomId)
+      .where(sql`status = 'playing'`),
+    // At most one active (queued/playing) instance of a track per room —
+    // played history can repeat.
+    uniqueIndex("room_queue_items_active_track_key")
+      .on(t.roomId, t.trackId)
+      .where(sql`status <> 'played'`),
+  ],
+);
+
+export const roomQueueVotes = pgTable(
+  "room_queue_votes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    queueItemId: uuid("queue_item_id")
+      .notNull()
+      .references(() => roomQueueItems.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    value: integer("value").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("room_queue_votes_item_user_key").on(t.queueItemId, t.userId),
+    check("room_queue_votes_value_check", sql`${t.value} in (-1,1)`),
+  ],
+);
+
 export const tasteProfiles = pgTable("taste_profiles", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id")

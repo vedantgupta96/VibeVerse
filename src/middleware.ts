@@ -28,5 +28,6 @@ export const config = {
     "/playlist/:path*",
     "/taste/:path*",
     "/galaxy/:path*",
+    "/rooms/:path*",
   ],
 };
