@@ -139,9 +139,11 @@ Docs to read before any phase: `PRODUCT_SPEC.md` (what), `ARCHITECTURE.md` (how)
 
 - [x] Add checked-in Supabase hardening migration: Data API object privileges revoked, hardened defaults, and RLS enabled without client policies; local PostgreSQL remains supported.
 - [x] Record the Supabase PostgreSQL 17 server-only boundary and runtime/migration connection modes in architecture, database, and deployment docs.
-- [ ] Apply the checked-in migrations to production Supabase and verify pgvector, RLS, and privilege posture.
-- [ ] Configure production Vercel database/AI/auth secrets and managed Redis fan-out without exposing credentials.
-- [ ] Deploy the production artifact and pass health, auth, save-track, and two-user room smoke checks.
+- [x] Apply the checked-in migrations to production Supabase and verify pgvector, RLS, application-object privileges, and functional Data API denial.
+- [x] Configure production Vercel database/AI/auth secrets and managed Redis fan-out; revoke the legacy Supabase credential surfaced during verification.
+- [x] Deploy the production artifact and pass health, auth, save-track, memory, AI playlist, stale-advance, and two-user Redis/SSE room smoke checks.
+- [x] Record the production launch evidence and remove all disposable smoke-test data.
+- [ ] Establish a retained, tested production backup path before inviting external beta users (the current Supabase free plan is not sufficient).
 - [ ] Complete the remaining manual VoiceOver, keyboard, zoom, and disabled-user beta checks and record evidence.
 
 **Accept:** production health is green; core single-user and two-user room flows pass against Supabase/Vercel; Data API roles cannot access application objects; Redis fans room events across instances; manual beta checks and launch evidence are recorded.
