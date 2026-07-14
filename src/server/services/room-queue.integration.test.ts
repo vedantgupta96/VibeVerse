@@ -7,6 +7,7 @@ import type { ProviderTrack } from "@/server/music/provider";
 const tag = randomUUID().slice(0, 8);
 const providerIdA = `roomq-test-${tag}-a`;
 const providerIdB = `roomq-test-${tag}-b`;
+const providerIdC = `roomq-test-${tag}-c`;
 const artistProviderId = `roomq-test-artist-${tag}`;
 
 function track(providerId: string, title: string): ProviderTrack {
@@ -31,6 +32,7 @@ function track(providerId: string, title: string): ProviderTrack {
 const tracksByProviderId: Record<string, ProviderTrack> = {
   [providerIdA]: track(providerIdA, "Test Track A"),
   [providerIdB]: track(providerIdB, "Test Track B"),
+  [providerIdC]: track(providerIdC, "Test Track C"),
 };
 
 vi.mock("@/server/music/deezer", () => ({
@@ -185,6 +187,122 @@ describe.skipIf(!dbReady)("room queue service (db integration)", () => {
     // No queued items remain — advancing again ends the session (null).
     const drained = await advanceNowPlaying(userA, room.id);
     expect(drained).toBeNull();
+  });
+
+  it("promotes the first queued item when the expected now-playing item is null", async () => {
+    const room = await createRoom(userA, "Expected Empty Advance Room");
+    await joinRoomByCode({ id: userB, name: "Member" }, room.code);
+
+    const first = await addToQueue(userB, room.id, providerIdA);
+    const nowPlaying = await advanceNowPlaying(userA, room.id, null);
+
+    expect(nowPlaying).toMatchObject({ id: first.id, status: "playing" });
+  });
+
+  it("treats a repeated null expectation as stale after promotion", async () => {
+    const room = await createRoom(userA, "Repeated Empty Advance Room");
+    await joinRoomByCode({ id: userB, name: "Member" }, room.code);
+
+    const first = await addToQueue(userB, room.id, providerIdA);
+    await expect(advanceNowPlaying(userA, room.id, null)).resolves.toMatchObject({
+      id: first.id,
+      status: "playing",
+    });
+
+    await expect(advanceNowPlaying(userA, room.id, null)).resolves.toMatchObject({
+      id: first.id,
+      status: "playing",
+    });
+
+    const [row] = await db
+      .select({ status: schema!.roomQueueItems.status })
+      .from(schema!.roomQueueItems)
+      .where(eq(schema!.roomQueueItems.id, first.id));
+    expect(row.status).toBe("playing");
+  });
+
+  it("advances an expected current item exactly once", async () => {
+    const room = await createRoom(userA, "Expected Current Advance Room");
+    await joinRoomByCode({ id: userB, name: "Member" }, room.code);
+
+    const first = await addToQueue(userB, room.id, providerIdA);
+    const second = await addToQueue(userB, room.id, providerIdB);
+    const current = await advanceNowPlaying(userA, room.id, null);
+    expect(current?.id).toBe(first.id);
+
+    await expect(
+      advanceNowPlaying(userA, room.id, first.id),
+    ).resolves.toMatchObject({ id: second.id, status: "playing" });
+    await expect(
+      advanceNowPlaying(userA, room.id, first.id),
+    ).resolves.toMatchObject({ id: second.id, status: "playing" });
+
+    const rows = await db
+      .select({ id: schema!.roomQueueItems.id, status: schema!.roomQueueItems.status })
+      .from(schema!.roomQueueItems)
+      .where(eq(schema!.roomQueueItems.roomId, room.id));
+    expect(rows).toEqual(
+      expect.arrayContaining([
+        { id: first.id, status: "played" },
+        { id: second.id, status: "playing" },
+      ]),
+    );
+  });
+
+  it("concurrent advances with the same expectation converge on one playing item", async () => {
+    const room = await createRoom(userA, "Guarded Concurrent Advance Room");
+    await joinRoomByCode({ id: userB, name: "Member" }, room.code);
+
+    const first = await addToQueue(userB, room.id, providerIdA);
+    const second = await addToQueue(userB, room.id, providerIdB);
+    const results = await Promise.all([
+      advanceNowPlaying(userA, room.id, null),
+      advanceNowPlaying(userA, room.id, null),
+    ]);
+
+    expect(results.map((item) => item?.id)).toEqual([first.id, first.id]);
+
+    const rows = await db
+      .select({ id: schema!.roomQueueItems.id, status: schema!.roomQueueItems.status })
+      .from(schema!.roomQueueItems)
+      .where(eq(schema!.roomQueueItems.roomId, room.id));
+    expect(rows).toEqual(
+      expect.arrayContaining([
+        { id: first.id, status: "playing" },
+        { id: second.id, status: "queued" },
+      ]),
+    );
+  });
+
+  it("serializes concurrent advances that expect the same playing item", async () => {
+    const room = await createRoom(userA, "Locked Concurrent Advance Room");
+    await joinRoomByCode({ id: userB, name: "Member" }, room.code);
+
+    const first = await addToQueue(userB, room.id, providerIdA);
+    const second = await addToQueue(userB, room.id, providerIdB);
+    const third = await addToQueue(userB, room.id, providerIdC);
+    await expect(advanceNowPlaying(userA, room.id, null)).resolves.toMatchObject({
+      id: first.id,
+      status: "playing",
+    });
+
+    const results = await Promise.all([
+      advanceNowPlaying(userA, room.id, first.id),
+      advanceNowPlaying(userA, room.id, first.id),
+    ]);
+    expect(results.map((item) => item?.id)).toEqual([second.id, second.id]);
+
+    const rows = await db
+      .select({ id: schema!.roomQueueItems.id, status: schema!.roomQueueItems.status })
+      .from(schema!.roomQueueItems)
+      .where(eq(schema!.roomQueueItems.roomId, room.id));
+    expect(rows).toEqual(
+      expect.arrayContaining([
+        { id: first.id, status: "played" },
+        { id: second.id, status: "playing" },
+        { id: third.id, status: "queued" },
+      ]),
+    );
   });
 
   it("recovers when a concurrent advance wins the one-playing constraint", async () => {

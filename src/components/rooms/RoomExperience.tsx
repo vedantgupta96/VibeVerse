@@ -158,7 +158,7 @@ export function RoomExperience({ roomId }: { roomId: string }) {
         <div className="flex flex-col gap-6">
           <NowPlayingCard
             room={room}
-            onAdvance={() => advance.mutate()}
+            onAdvance={() => advance.mutate(room.nowPlaying?.id ?? null)}
             advancing={advance.isPending}
           />
           <QueuePanel room={room} currentUserId={currentUserId} />
