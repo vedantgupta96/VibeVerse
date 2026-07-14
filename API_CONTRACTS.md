@@ -311,7 +311,7 @@ Clears the caller's own vote on this item.
 
 #### `POST /api/rooms/[id]/advance`
 
-Owner-only. Marks the current `playing` item `played`, promotes the top-ranked `queued` item (vote score desc, then oldest first) to `playing`, or leaves now-playing empty.
+Body: `{ "expectedNowPlayingId": "uuid" | null }`, using the now-playing item from the snapshot the owner rendered (`null` when nothing was playing). Owner-only. When the expectation still matches, marks the current `playing` item `played`, promotes the top-ranked `queued` item (vote score desc, then oldest first) to `playing`, or leaves now-playing empty. If another request already changed now-playing, the stale request is idempotent: it returns the actual current item without advancing again. An empty body remains accepted for legacy clients and uses the original unguarded behavior; a supplied body is validated strictly.
 **200** → `{ "nowPlaying": RoomQueueItemDTO | null }`. **403 FORBIDDEN** for non-owners.
 
 ### Reactions & AI vibe

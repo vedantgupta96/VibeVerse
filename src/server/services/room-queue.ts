@@ -281,11 +281,14 @@ export async function clearVote(
 /**
  * Owner-only. Transitions the current `playing` item (if any) to `played`,
  * then promotes the top-ranked `queued` item (per `sortQueueItems`) to
- * `playing`, or leaves now-playing empty if the queue is empty.
+ * `playing`, or leaves now-playing empty if the queue is empty. When the
+ * caller supplies the item it rendered (including null), a mismatched current
+ * item makes the request a stale/idempotent read instead of a second advance.
  */
 export async function advanceNowPlaying(
   userId: string,
   roomId: string,
+  expectedNowPlayingId?: string | null,
 ): Promise<RoomQueueItemDTO | null> {
   const [room] = await db
     .select({ ownerId: rooms.ownerId })
@@ -300,6 +303,31 @@ export async function advanceNowPlaying(
   let newPlayingId: string | null;
   try {
     newPlayingId = await db.transaction(async (tx) => {
+      // Serialize advances per room before comparing the caller's rendered
+      // expectation. Without this lock, two requests that both saw the same
+      // playing item could both pass the guard and consume two queue entries.
+      await tx
+        .select({ id: rooms.id })
+        .from(rooms)
+        .where(eq(rooms.id, roomId))
+        .for("update");
+
+      const [current] = await tx
+        .select({ id: roomQueueItems.id })
+        .from(roomQueueItems)
+        .where(
+          and(eq(roomQueueItems.roomId, roomId), eq(roomQueueItems.status, "playing")),
+        )
+        .limit(1);
+      const currentPlayingId = current?.id ?? null;
+
+      if (
+        expectedNowPlayingId !== undefined &&
+        expectedNowPlayingId !== currentPlayingId
+      ) {
+        return currentPlayingId;
+      }
+
       await tx
         .update(roomQueueItems)
         .set({ status: "played" })

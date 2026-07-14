@@ -131,10 +131,13 @@ export function useClearVote(roomId: string) {
 export function useAdvance(roomId: string) {
   const invalidate = useInvalidateRoom(roomId);
   return useMutation({
-    mutationFn: () =>
+    mutationFn: (expectedNowPlayingId: string | null) =>
       apiFetch<{ nowPlaying: RoomQueueItemDTO | null }>(
         `/api/rooms/${roomId}/advance`,
-        { method: "POST" },
+        {
+          method: "POST",
+          body: JSON.stringify({ expectedNowPlayingId }),
+        },
       ),
     onSuccess: invalidate,
   });

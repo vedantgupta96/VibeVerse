@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   addToQueueSchema,
+  advanceNowPlayingSchema,
   castVoteSchema,
   createRoomSchema,
   joinRoomByCodeSchema,
@@ -72,6 +73,31 @@ describe("addToQueueSchema", () => {
 
   it("rejects an empty providerId", () => {
     expect(() => addToQueueSchema.parse({ providerId: "" })).toThrow();
+  });
+});
+
+describe("advanceNowPlayingSchema", () => {
+  it("accepts a UUID or null expectation", () => {
+    const id = "2f7ecac4-bdd3-4c83-a6bc-1bc1ec93410f";
+    expect(
+      advanceNowPlayingSchema.parse({ expectedNowPlayingId: id }),
+    ).toEqual({ expectedNowPlayingId: id });
+    expect(
+      advanceNowPlayingSchema.parse({ expectedNowPlayingId: null }),
+    ).toEqual({ expectedNowPlayingId: null });
+  });
+
+  it("rejects missing, invalid, or additional fields", () => {
+    expect(() => advanceNowPlayingSchema.parse({})).toThrow();
+    expect(() =>
+      advanceNowPlayingSchema.parse({ expectedNowPlayingId: "not-a-uuid" }),
+    ).toThrow();
+    expect(() =>
+      advanceNowPlayingSchema.parse({
+        expectedNowPlayingId: null,
+        unexpected: true,
+      }),
+    ).toThrow();
   });
 });
 

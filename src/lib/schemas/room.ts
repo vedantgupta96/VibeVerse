@@ -35,6 +35,12 @@ export const addToQueueSchema = z.object({
   providerId: z.string().trim().min(1).max(50),
 });
 
+export const advanceNowPlayingSchema = z
+  .object({
+    expectedNowPlayingId: queueItemIdSchema.nullable(),
+  })
+  .strict();
+
 export const reactSchema = z.object({
   mood: z.enum(MOODS),
 });
@@ -43,4 +49,5 @@ export type CreateRoomInput = z.infer<typeof createRoomSchema>;
 export type JoinRoomByCodeInput = z.infer<typeof joinRoomByCodeSchema>;
 export type CastVoteInput = z.infer<typeof castVoteSchema>;
 export type AddToQueueInput = z.infer<typeof addToQueueSchema>;
+export type AdvanceNowPlayingInput = z.infer<typeof advanceNowPlayingSchema>;
 export type ReactInput = z.infer<typeof reactSchema>;
