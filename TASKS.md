@@ -135,6 +135,19 @@ Docs to read before any phase: `PRODUCT_SPEC.md` (what), `ARCHITECTURE.md` (how)
 
 ---
 
+## Phase 12 — Production Beta Launch
+
+- [x] Add checked-in Supabase hardening migration: Data API object privileges revoked, hardened defaults, and RLS enabled without client policies; local PostgreSQL remains supported.
+- [x] Record the Supabase PostgreSQL 17 server-only boundary and runtime/migration connection modes in architecture, database, and deployment docs.
+- [ ] Apply the checked-in migrations to production Supabase and verify pgvector, RLS, and privilege posture.
+- [ ] Configure production Vercel database/AI/auth secrets and managed Redis fan-out without exposing credentials.
+- [ ] Deploy the production artifact and pass health, auth, save-track, and two-user room smoke checks.
+- [ ] Complete the remaining manual VoiceOver, keyboard, zoom, and disabled-user beta checks and record evidence.
+
+**Accept:** production health is green; core single-user and two-user room flows pass against Supabase/Vercel; Data API roles cannot access application objects; Redis fans room events across instances; manual beta checks and launch evidence are recorded.
+
+---
+
 ## Deferred (post-MVP)
 
 - 3D galaxy (React Three Fiber)

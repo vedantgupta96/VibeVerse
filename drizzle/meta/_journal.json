@@ -15,6 +15,13 @@
       "when": 1783819350770,
       "tag": "0001_luxuriant_human_robot",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783992085415,
+      "tag": "0002_supabase_public_schema_hardening",
+      "breakpoints": true
     }
   ]
 }

@@ -11,7 +11,7 @@ How VibeVerse is built. This document makes the stack decisions concrete so impl
 | Animation | **Framer Motion** | Page transitions, micro-interactions |
 | Server state | **TanStack Query v5** | All `/api` data fetching, caching, optimistic mutations |
 | Client state | **Zustand** | Audio preview player, galaxy UI state only — keep it minimal |
-| Database | **PostgreSQL 16 + pgvector** (Docker locally, Neon/Supabase in prod) | Required; pgvector for memory/semantic search |
+| Database | **PostgreSQL 16+ + pgvector** (PostgreSQL 16 locally, Supabase PostgreSQL 17 in production) | Required; pgvector for memory/semantic search |
 | ORM | **Drizzle ORM** (`drizzle-orm`, `drizzle-kit`) | First-class pgvector column type and SQL-transparent queries; Prisma's vector support requires `Unsupported()` escape hatches |
 | Auth | **Better Auth** (email/password + optional Google) with Drizzle adapter | TypeScript-native, owns its schema tables, no vendor lock-in, works in route handlers and the Next.js request proxy |
 | Music metadata | **Deezer public API** behind a `MusicProvider` interface | No API key required → zero-friction demo; rich metadata (genres, artwork, 30s previews). Spotify can be added later as a second provider without touching call sites |
@@ -267,7 +267,9 @@ REDIS_URL=                      # optional; unset → in-process realtime bus (P
 
 Validate at boot with a Zod `env.ts` (fail fast on missing required vars; AI keys required only when AI routes are hit, so the app shell runs without them).
 
-In production, `DATABASE_URL` is the Supabase transaction-pooler URL used by the running serverless app. `drizzle.config.ts` uses `DATABASE_DIRECT_URL ?? DATABASE_URL`, allowing migrations and administrative tooling to use the direct connection without coupling runtime code to Supabase. The runtime `node-postgres` pool is finite (`max: 5` in production) with connection and idle timeouts. See `DEPLOYMENT.md`; external project creation and environment changes remain manual.
+In production, `DATABASE_URL` is the Supabase transaction-pooler URL (port `6543`) used by the running serverless app. `drizzle.config.ts` uses `DATABASE_DIRECT_URL ?? DATABASE_URL`; `DATABASE_DIRECT_URL` is the session/direct connection (port `5432`) reserved for migrations and administrative tooling. The runtime `node-postgres` pool is finite (`max: 5` in production) with connection and idle timeouts.
+
+Supabase remains a PostgreSQL host, not a browser data layer: the app does not ship the Supabase SDK or expose Data API credentials. Migration `0002` revokes the Supabase Data API roles' privileges on application tables, sequences, and functions, revokes public function execution, applies matching default-privilege restrictions for future objects created by the migration owner (`postgres` in production), and enables RLS on every application table without client policies. Server routes connect as the PostgreSQL object owner, which retains owner access and bypasses RLS. See `DEPLOYMENT.md` for connection and verification guidance.
 
 ## Local Development
 
