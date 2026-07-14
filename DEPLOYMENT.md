@@ -13,6 +13,7 @@ Supabase is the production PostgreSQL and pgvector host only. VibeVerse keeps Dr
    - the **transaction pooler** URL (Supavisor, normally port `6543`) for serverless runtime traffic;
    - the **direct** PostgreSQL URL (normally port `5432`) for migrations, `pg_dump`, and other administrative tooling.
 3. Append or preserve `sslmode=require` on production URLs.
+4. Because VibeVerse is server-only, remove `public` from PostgREST's exposed schemas and extra search path. Expose only a reviewed API schema if a future feature deliberately adopts the Supabase Data API.
 
 For the `node-postgres` runtime URL, also append `uselibpqcompat=true` (for example, `?sslmode=require&uselibpqcompat=true`). Current `pg` releases otherwise interpret `sslmode=require` as certificate-verifying mode and may reject the Supabase pooler certificate chain. Migration tooling continues to use the provider's standard `sslmode=require` connection string.
 
@@ -30,9 +31,9 @@ DATABASE_DIRECT_URL="<direct-url>"
 npm run db:migrate
 ```
 
-`drizzle.config.ts` intentionally chooses `DATABASE_DIRECT_URL ?? DATABASE_URL`, while the running application reads only `DATABASE_URL`. The checked-in migrations create the `vector` extension before the pgvector-backed tables and indexes. Migration `0002` then hardens the server-only access model: it revokes existing and default object privileges from Supabase's `anon`, `authenticated`, and `service_role` roles, revokes public function execution, and enables RLS on every application table without client policies. Run migrations as the PostgreSQL object owner (`postgres` in production); the application uses that same owner identity and therefore retains owner access and bypasses RLS.
+`drizzle.config.ts` intentionally chooses `DATABASE_DIRECT_URL ?? DATABASE_URL`, while the running application reads only `DATABASE_URL`. The checked-in migrations create the `vector` extension before the pgvector-backed tables and indexes. Migration `0002` then hardens the server-only access model: it revokes existing and default application-object privileges from Supabase's `anon`, `authenticated`, and `service_role` roles and enables RLS on every application table without client policies. Run migrations as the PostgreSQL object owner (`postgres` in production); the application uses that same owner identity and therefore retains owner access and bypasses RLS.
 
-After migrating, verify in a controlled SQL session that pgvector is installed, every application table has RLS enabled, and the Data API roles have no table, sequence, or function privileges in `public`. Do not add client policies unless the architecture is deliberately changed to introduce a reviewed Supabase Data API use case.
+After migrating, verify in a controlled SQL session that pgvector is installed, every application table has RLS enabled, and the Data API roles have no table or sequence privileges on application objects. Supabase-owned extension functions may retain provider-managed execution ACLs that the project `postgres` role cannot change; therefore also verify functionally that a valid publishable key cannot select `public` through PostgREST. Do not add client policies or re-expose `public` unless the architecture is deliberately changed to introduce a reviewed Supabase Data API use case.
 
 Run migrations from one controlled job, not from every application instance. Before a destructive future migration, take a verified backup and document a forward-fix or rollback plan. Never assume a schema rollback also restores deleted data.
 
@@ -55,7 +56,10 @@ Keep preview and production databases separate. Do not reuse local/demo credenti
 2. Request `GET /api/health`; expect `200 { "ok": true }` and an `x-request-id` response header.
 3. Create a throwaway account and verify sign-in, a saved track, and a room create/join flow using two browsers.
 4. Check Vercel structured logs by request/error ID. Confirm database connection counts remain bounded and SSE reconnects rather than permanently dropping.
-5. Confirm current Supabase backups/PITR settings match the release's recovery objective and perform periodic restore drills to a non-production project.
+5. With managed Redis enabled, hold an authenticated SSE connection open and confirm queue and vote events arrive after mutations from another session.
+6. Confirm current Supabase backups/PITR settings match the release's recovery objective and perform periodic restore drills to a non-production project.
+
+Free-plan Supabase projects do not provide production-grade automatic backup retention and may pause after inactivity. Before inviting external beta users, either upgrade to a plan with retained automatic backups or implement encrypted off-site logical backups with a tested restore procedure.
 
 ## Rollback cautions
 

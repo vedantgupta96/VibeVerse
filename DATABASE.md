@@ -232,14 +232,14 @@ LIMIT 10;
 
 - `drizzle-kit generate` for every schema change; SQL migrations are checked into `drizzle/`.
 - The first migration (`0000`, drizzle-kit's 0-based numbering) enables `vector` (the `CREATE EXTENSION IF NOT EXISTS vector;` line is prepended to the generated SQL) and creates everything above. Better Auth core tables are hand-defined in the same schema file (matching Better Auth's default Drizzle output); the auth instance points its adapter at them in Phase 3 rather than regenerating.
-- Migration `0002` establishes the production Supabase boundary. Existing and default table, sequence, and function privileges are revoked from `anon`, `authenticated`, and `service_role` when those roles exist; public function execution is also revoked. RLS is enabled on every application and Better Auth table with no client policies. The migration remains compatible with local PostgreSQL installations that do not define Supabase's Data API roles.
+- Migration `0002` establishes the production Supabase boundary. Existing and default table, sequence, and migration-owner function privileges are revoked from `anon`, `authenticated`, and `service_role` when those roles exist; public execution is revoked from functions the migration role can administer. RLS is enabled on every application and Better Auth table with no client policies. The migration remains compatible with local PostgreSQL installations that do not define Supabase's Data API roles. Supabase-owned extension functions can retain provider-managed ACLs, so removing `public` from PostgREST's exposed schemas is a required second layer in production.
 - No destructive migrations without an explicit note in the PR description.
 
 ## Production access model
 
 VibeVerse accesses Supabase only from server routes through Drizzle and `node-postgres`; there is no Supabase browser SDK or Data API path. The running app uses the transaction pooler on port `6543`. Checked-in migrations and administrative tools use `DATABASE_DIRECT_URL`, pointing to a TLS-protected session/direct connection on port `5432`.
 
-Application objects are created and owned by the migration role (`postgres` in Supabase). That owner connection retains access and bypasses RLS; browser-facing Supabase roles have no table, sequence, or function privileges in `public` and receive no RLS policies. Future migrations must run as the same owner so the hardened default privileges continue to apply.
+Application objects are created and owned by the migration role (`postgres` in Supabase). That owner connection retains access and bypasses RLS; browser-facing Supabase roles have no table or sequence privileges on application objects and receive no RLS policies. PostgREST does not expose `public`, preventing the Data API from routing to application objects or provider-owned extension functions whose ACLs are controlled by Supabase. Future migrations must run as the same owner so the hardened default privileges continue to apply.
 
 ## Seed Script (optional, `npm run db:seed`)
 
