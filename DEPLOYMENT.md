@@ -1,10 +1,10 @@
 # Production Deployment
 
-This runbook prepares VibeVerse for Vercel with Supabase-managed PostgreSQL. It does not create or modify either account; project creation, credentials, environment configuration, backups, and deployment remain manual account-bound operations.
+VibeVerse production uses Supabase-managed PostgreSQL 17 with pgvector and deploys the Next.js application to Vercel. This runbook records the release process without storing account credentials or secrets.
 
 ## Architecture boundary
 
-Supabase is the production PostgreSQL and pgvector host only. VibeVerse keeps Drizzle and `node-postgres`, Better Auth, REST + SSE, and the Redis/in-process realtime bus. Do not add Supabase Auth, Realtime, Storage, or `@supabase/supabase-js` for this deployment.
+Supabase is the production PostgreSQL and pgvector host only. VibeVerse keeps Drizzle and `node-postgres`, Better Auth, REST + SSE, and the Redis/in-process realtime bus. All data access is server-side. Do not add Supabase Auth, Realtime, Storage, or `@supabase/supabase-js` for this deployment.
 
 ## 1. Create and secure the database
 
@@ -14,7 +14,9 @@ Supabase is the production PostgreSQL and pgvector host only. VibeVerse keeps Dr
    - the **direct** PostgreSQL URL (normally port `5432`) for migrations, `pg_dump`, and other administrative tooling.
 3. Append or preserve `sslmode=require` on production URLs.
 
-The direct endpoint is IPv6 by default. Networks without IPv6 may not reach it; use an IPv4-capable direct/session-pooler option supplied by Supabase for administrative work rather than substituting the transaction pooler for migrations. The transaction pooler is the safer Vercel runtime path because it absorbs connections across short-lived serverless instances.
+For the `node-postgres` runtime URL, also append `uselibpqcompat=true` (for example, `?sslmode=require&uselibpqcompat=true`). Current `pg` releases otherwise interpret `sslmode=require` as certificate-verifying mode and may reject the Supabase pooler certificate chain. Migration tooling continues to use the provider's standard `sslmode=require` connection string.
+
+The direct endpoint is IPv6 by default. Networks without IPv6 may not reach it; use an IPv4-capable session-pooler connection on port `5432` supplied by Supabase for administrative work rather than substituting the transaction pooler for migrations. The transaction pooler is the safer Vercel runtime path because it absorbs connections across short-lived serverless instances.
 
 Transaction mode does not support named prepared statements. VibeVerse currently uses unnamed `node-postgres` queries and must keep it that way while this runtime URL is in use.
 
@@ -28,7 +30,9 @@ DATABASE_DIRECT_URL="<direct-url>"
 npm run db:migrate
 ```
 
-`drizzle.config.ts` intentionally chooses `DATABASE_DIRECT_URL ?? DATABASE_URL`, while the running application reads only `DATABASE_URL`. The existing migrations create the `vector` extension before the pgvector-backed tables and indexes. No schema migration is required merely to change database hosts.
+`drizzle.config.ts` intentionally chooses `DATABASE_DIRECT_URL ?? DATABASE_URL`, while the running application reads only `DATABASE_URL`. The checked-in migrations create the `vector` extension before the pgvector-backed tables and indexes. Migration `0002` then hardens the server-only access model: it revokes existing and default object privileges from Supabase's `anon`, `authenticated`, and `service_role` roles, revokes public function execution, and enables RLS on every application table without client policies. Run migrations as the PostgreSQL object owner (`postgres` in production); the application uses that same owner identity and therefore retains owner access and bypasses RLS.
+
+After migrating, verify in a controlled SQL session that pgvector is installed, every application table has RLS enabled, and the Data API roles have no table, sequence, or function privileges in `public`. Do not add client policies unless the architecture is deliberately changed to introduce a reviewed Supabase Data API use case.
 
 Run migrations from one controlled job, not from every application instance. Before a destructive future migration, take a verified backup and document a forward-fix or rollback plan. Never assume a schema rollback also restores deleted data.
 
